@@ -17,7 +17,9 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
-    'http://192.168.0.114:8000'
+    'http://192.168.0.114:8000',
+    'http://194.238.18.228'
+    'https://194.238.18.228'
 ]
 
 INSTALLED_APPS = [
@@ -74,8 +76,12 @@ WSGI_APPLICATION = 'server.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR + '/db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'climatedb',
+        'USER': 'climate',
+        'PASSWORD': 'HDFCERGOweb2023',
+        'HOST': '194.238.18.228',
+        'PORT': '5432',
     }
 }
 

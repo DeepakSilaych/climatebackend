@@ -2,14 +2,14 @@
 # Create your views here.
 from .models import AWSStation, StationData
 from .serializers import AWSStationSerializer, StationDataSerializer
-from .utils.daily_prediction import predict_day1, predict_day2, predict_day3
+# from .utils.daily_prediction import predict_day1, predict_day2, predict_day3
 # from .utils.hourly_prediction import predict_hourly
-from .utils.gfs import download_gfs_data
+# from .utils.gfs import download_gfs_data
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 def get_predictions(request):
-    predict_hourly()
+    # predict_hourly()
     # download_gfs_data()     
     # predict_day1()
     # predict_day2()
@@ -36,5 +36,3 @@ class StationDetailView(APIView):
         station_data = StationDataSerializer(station_data, many=True)
         
         return Response({'station': serializer.data, 'data': station_data.data})
-        
-        

@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 
 
 class WeatherStation(models.Model):
@@ -9,7 +8,6 @@ class WeatherStation(models.Model):
     image = models.ImageField(upload_to='weatherstation_images/', blank=True, null=True)
 
     curr_waterlevel = models.FloatField(default=0)
-    arr_waterlevel = ArrayField(base_field=models.FloatField(), size=30)
 
     def __str__(self):
         return self.name

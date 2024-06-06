@@ -12,6 +12,7 @@ class AWSStation(models.Model):
     def __str__(self):
         return self.name
     
+
 class StationData(models.Model):
     station = models.ForeignKey(AWSStation, on_delete=models.CASCADE)
     rainfall = models.FloatField(default=0)
@@ -22,6 +23,8 @@ class StationData(models.Model):
     
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
+    
+
 class DaywisePrediction(models.Model):
     station = models.ForeignKey(AWSStation, on_delete=models.CASCADE, blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True, null=True)
@@ -32,9 +35,10 @@ class DaywisePrediction(models.Model):
 
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
+    
+
 
 class TrainStation(models.Model):
-    
     station_code = models.IntegerField(primary_key=True)
     station_name = models.CharField(max_length=100)
     latitude = models.FloatField(blank=True, null=True)
@@ -47,7 +51,6 @@ class TrainStation(models.Model):
     def update(self):
         last_data = StationData.objects.filter(station=self.neareststation).order_by('-timestamp')[:4]
         if last_data:
-                        
             max_rainfall = max(data.rainfall for data in last_data)
             if max_rainfall > 20:
                 self.WarningLevel = 3

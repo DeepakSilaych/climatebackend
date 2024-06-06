@@ -60,5 +60,3 @@ def update_trainstations():
     for station in all_stations:
         station.update()
            
-    ist_timezone = pytz.timezone('Asia/Kolkata')
-    current_time_ist = datetime.now(ist_timezone)
