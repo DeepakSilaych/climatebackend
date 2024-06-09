@@ -55,6 +55,13 @@ def save_station_data(station, data):
         timestamp=timezone.now()
     )
 
+    station.curr_rainfall = rainfall
+    station.curr_temp = temperature
+    station.curr_windspeed = wind_speed
+
+    station.save()
+
+
 def update_trainstations():
     all_stations = TrainStation.objects.all()
     for station in all_stations:
