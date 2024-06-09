@@ -125,8 +125,8 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'awsstations.tasks.scheduled_15_min',
         'schedule': crontab(minute='0,15,30,45'),
     },
-    'everyday-3:35': {
-        'task': 'awsstations.tasks.scheduled_daily',
-        'schedule': crontab(hour=16, minute=14),
-    }
+    # 'everyday-3:35': {
+    #     'task': 'awsstations.tasks.scheduled_daily',
+    #     'schedule': crontab(hour=16, minute=14),
+    # }
 }
