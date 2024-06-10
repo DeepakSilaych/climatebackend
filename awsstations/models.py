@@ -31,7 +31,6 @@ class DaywisePrediction(models.Model):
     day1_rainfall = models.FloatField(default=0)
     day2_rainfall = models.FloatField(default=0)
     day3_rainfall = models.FloatField(default=0)
-    day4_rainfall = models.FloatField(default=0)
 
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
