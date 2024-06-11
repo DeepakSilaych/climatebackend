@@ -39,20 +39,37 @@ class StationDetailView(APIView):
 
         # add future timestamp to hourly_data
         pred_hrly = HourlyPrediction.objects.filter(station=station).latest('timestamp')
+
+        print ("------------------------------------------------------------------3.1")
+
         updated_hrly_data = []
-        for i in range(6):
-            updated_hrly_data.append({
-                'hour': str((now_time.hour - 6 + i)%24)+":00",
-                'total_rainfall': hourly_data[i]['total_rainfall']
-            })
+        if len(hourly_data) < 6:
+            for i in range(6 - len(hourly_data)):
+                updated_hrly_data.append({
+                    'hour': str((now_time.hour - 6 + i)%24)+":00",
+                    'total_rainfall': 0
+                })
+        else :
+                
+            for i in range(6):
+                updated_hrly_data.append({
+                    'hour': str((now_time.hour - 6 + i)%24)+":00",
+                    'total_rainfall': hourly_data[i]['total_rainfall']
+                })
 
         print ("------------------------------------------------------------------3")
         
         for i in range(24):
-            updated_hrly_data.append({
-                'hour': str((now_time.hour + i)%24)+":00",
-                'total_rainfall': pred_hrly.hr_24_rainfall[str(i)]
-            })  
+            if str(i) in pred_hrly.hr_24_rainfall:
+                updated_hrly_data.append({
+                    'hour': str((now_time.hour + i)%24)+":00",
+                    'total_rainfall': pred_hrly.hr_24_rainfall[str(i)]
+                })
+            else:
+                updated_hrly_data.append({
+                    'hour': str((now_time.hour + i)%24)+":00",
+                    'total_rainfall': 0  # or some default value
+                })
         
         print ("------------------------------------------------------------------4")
         
