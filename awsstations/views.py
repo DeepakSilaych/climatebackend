@@ -1,14 +1,12 @@
 
 # Create your views here.
-from .models import AWSStation, StationData, DaywisePrediction, HourlyPrediction
-from .serializers import AWSStationSerializer, StationDataSerializer, DaywisePredictionSerializer, HourlyPredictionSerializer
+from .models import AWSStation, StationData, DaywisePrediction, HourlyPrediction, TrainStation
+from .serializers import AWSStationSerializer, TrainStationSerializer ,StationDataSerializer, DaywisePredictionSerializer, HourlyPredictionSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models.functions import TruncDate, TruncHour
 from django.db.models import Sum
-
-
-
+from django.utils.timezone import now, timedelta
 import pandas as pd
 from .utils.DayWisePrediction import dailyprediction
 from .utils.gfs import download_gfs_data
@@ -20,20 +18,11 @@ class StationListView(APIView):
         serializer = AWSStationSerializer(stations, many=True)
         return Response(serializer.data)
 
-from django.utils.timezone import now, timedelta
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import serializers
-
-class AWSStationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AWSStation
-        fields = '__all__'
-
-class StationDataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StationData
-        fields = '__all__'
+class TrainStationListView(APIView):
+    def get(self, request):
+        stations = TrainStation.objects.all()
+        serializer = TrainStationSerializer(stations, many=True)
+        return Response(serializer.data)
 
 class StationDetailView(APIView):
     def get(self, request, station_id):

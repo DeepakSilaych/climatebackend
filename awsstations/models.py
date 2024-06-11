@@ -34,6 +34,7 @@ class DaywisePrediction(models.Model):
 
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
+   
     
 class HourlyPrediction(models.Model):
     station = models.ForeignKey(AWSStation, on_delete=models.CASCADE, blank=True, null=True)
@@ -44,7 +45,6 @@ class HourlyPrediction(models.Model):
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
     
-
 
 class TrainStation(models.Model):
     station_code = models.IntegerField(primary_key=True)
