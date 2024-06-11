@@ -2,20 +2,10 @@
 # Create your views here.
 from .models import AWSStation, StationData
 from .serializers import AWSStationSerializer, StationDataSerializer
-# from .utils.daily_prediction import predict_day1, predict_day2, predict_day3
-# from .utils.hourly_prediction import predict_hourly
-# from .utils.gfs import download_gfs_data
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
-def get_predictions(request):
-    # predict_hourly()
-    # download_gfs_data()     
-    # predict_day1()
-    # predict_day2()
-    # predict_day3()
-    return Response({'message': 'Predictions generated'})
-
+from django.db.models.functions import TruncDate, TruncHour
+from django.db.models import Sum
 
 class StationListView(APIView):
     def get(self, request):
@@ -23,16 +13,38 @@ class StationListView(APIView):
         serializer = AWSStationSerializer(stations, many=True)
         return Response(serializer.data)
 
+from django.utils.timezone import now, timedelta
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import serializers
+
+class AWSStationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AWSStation
+        fields = '__all__'
+
+class StationDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StationData
+        fields = '__all__'
+
 class StationDetailView(APIView):
     def get(self, request, station_id):
         station = AWSStation.objects.get(station_id=station_id)
         serializer = AWSStationSerializer(station)
         
-        station_data = StationData.objects.filter(station_id=station_id)
+        now_time = now()
 
-        # last 30 data only
-        station_data = station_data.order_by('-timestamp')[:30]
-        station_data = station_data[::-1]
-        station_data = StationDataSerializer(station_data, many=True)
+        four_hours_ago = now_time - timedelta(hours=6)
+        hourly_data_in_min = StationData.objects.filter(station=station, timestamp__gte=four_hours_ago).order_by('-timestamp').values('timestamp', 'rainfall')
+        hourly_data = hourly_data_in_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')
         
-        return Response({'station': serializer.data, 'data': station_data.data})
+        three_days_ago = now_time.date() - timedelta(days=3)
+        daily_data_in_min = StationData.objects.filter(station=station, timestamp__gte=three_days_ago).order_by('-timestamp').values('timestamp', 'rainfall')
+        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
+        
+        return Response({
+            'station': serializer.data,
+            'hourly_data': hourly_data,
+            'daily_data': daily_data,
+        })

@@ -9,4 +9,4 @@ class AWSStationSerializer(serializers.ModelSerializer):
 class StationDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = StationData
-        fields = ['rainfall', 'timestamp']
+        fields = 'rainfall', 'timestamp'
