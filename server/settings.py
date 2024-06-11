@@ -1,6 +1,5 @@
 
 from pathlib import Path
-from .celery import CELERY_BEAT_SCHEDULE
 from datetime import timedelta
 import os
 from celery.schedules import crontab
@@ -121,22 +120,3 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-################################################################################ !!!!!!!!!!!!!!!!!!! Celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-
-CELERY_BEAT_SCHEDULE = {
-    'every-15-minutes': {
-        'task': 'awsstations.tasks.scheduled_15_min',
-        'schedule': crontab(minute='0,15,30,45'),
-    },
-    'every-hour': {
-        'task': 'awsstations.tasks.scheduled_hourly',
-        'schedule': crontab(minute=5),
-    },
-    
-    'everyday-4:55': {
-        'task': 'awsstations.tasks.scheduled_daily',
-        'schedule': crontab(hour=16, minute=55),
-    }
-
-}
