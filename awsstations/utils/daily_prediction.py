@@ -1,549 +1,129 @@
-import os
-import requests
-import pygrib
 import pandas as pd
-from datetime import datetime, timedelta
 import numpy as np
-import copy
-from tensorflow.keras.models import Sequential, load_model
+import pywt
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.initializers import Orthogonal
+import matplotlib.pyplot as plt
 from django.conf import settings
-from awsstations.models import AWSStation, DaywisePrediction
-import copy
-import shutil
+import os
+from awsstations.models import StationData, AWSStation
 
-stations = AWSStation.objects.all()
-         
-def predict_day1():
-    forecast_hr = np.arange(15,85,3)
-    latbounds = [ 18.5 - 0.25 , 19.5 ]
-    lonbounds = [ 72.5 , 73.5 + 0.25 ]
+def dwt_decomposition(data, wavelet='db7', level=3):
+    coeffs = pywt.wavedec(data, wavelet, level=level)
+    cA3, cD3, cD2, cD1 = coeffs
+    only_A3_signal = pywt.waverec([cA3, np.zeros_like(cD3), np.zeros_like(cD2), np.zeros_like(cD1)], wavelet)
+    only_D3_signal = pywt.waverec([np.zeros_like(cA3), cD3, np.zeros_like(cD2), np.zeros_like(cD1)], wavelet, mode='constant')
+    only_D2_signal = pywt.waverec([np.zeros_like(cA3), np.zeros_like(cD3), cD2, np.zeros_like(cD1)], wavelet)
+    only_D1_signal = pywt.waverec([np.zeros_like(cA3), np.zeros_like(cD3), np.zeros_like(cD2), cD1], wavelet)
+    return only_A3_signal[:len(data)], only_D3_signal[:len(data)], only_D2_signal[:len(data)], only_D1_signal[:len(data)]
 
-    time_from_ref = np.arange(15,85,3)
-    columns_prec = []
+def predict_hourly():
+    res = {}
+    # Define parameters
+    n_steps_in = 3
+    n_steps_out = 1
+    num_hours = 24
+    all_correlations = []
 
-    for i in ['Prec']:
-        for time_steps in forecast_hr:
-            for j in np.arange(19.5,18.25,-0.25):
-                for k in np.arange(72.5,73.75,0.25):
-                    columns_prec.append(f'{i}_{j}_{k}_{time_steps:03d}')
+    # Prepare to store results
+    correlations_all_stations_A3 = {}
+    predictions_all_stations_A3 = {}
+    correlations_all_stations_D3 = {}
+    predictions_all_stations_D3 = {}
 
-
-    x = datetime.now().replace(second=0, microsecond=0)
-    pd.to_datetime(x)
-    day=x.day
-    month = x.month
-    year = x.year
-
-
-    start_day = f'{year}-{month}-{day}'
-    end_day = pd.to_datetime(start_day) + timedelta(hours=24)
-    data_prec = pd.DataFrame(index =[pd.to_datetime(start_day) + timedelta(hours=6)], columns = columns_prec)
-    root_directory = os.path.join(settings.BASE_DIR,"files", f"{day:02d}-{month:02d}-{year}")
-
-
-    for time_step in data_prec.index:
+    # Loop through each station
+    for station in AWSStation.objects.all():
+        print(f'Processing station: {station}')
         
-        year = time_step.year
-        month = time_step.month
-        day = time_step.day
-
-        ref_time = time_step.hour
+        # fetch all station data in latest to oldest order
+        stationdata = StationData.objects.filter(station=station).order_by('-timestamp')
         
-        date_temp = pd.date_range(start = time_step + timedelta(hours = 15), end = time_step + timedelta(hours = 84) , freq = '3H')
-        col_temp = np.arange(0,25)
+        # print rainfall data
+        stationdata = [data.rainfall for data in stationdata]
         
-        data_temp = pd.DataFrame(index  = date_temp, columns=col_temp)
+        #convert 15min data to hourly data by adding every 4 data
+        stationdata_hourly = [sum(stationdata[i:i+4]) for i in range(0, len(stationdata), 4)] 
+        print(stationdata_hourly)
         
-        for time_lag in time_from_ref:
-            
-            filename =f'gfs.t{ref_time:02d}z.pgrb2.0p25.f{time_lag:03d}'
-            
-            grib = f'{root_directory}/{filename}'
-            grbs = pygrib.open(grib)
-            variable_name_to_select = 'Precipitation rate' 
-            
-            for grb in grbs.select(name=variable_name_to_select):
-                data = grb.values
-                latitudes, longitudes = grb.latlons()  
-                parameter_name = grb.name  
-                level_type = grb.typeOfLevel 
-                level_value = grb.level  
-                valid_time = grb.validDate 
+        values = np.array(stationdata_hourly).reshape(-1, 1)
+        print(values)
+        
+        n_features = values.shape[1]
+    
+        # Prepare the input and output sequences
+        n_samples = len(values) - n_steps_in + 1
+        print("------------------------------------------------------------------------------------------------------------------------------",n_samples)
+        X_test = np.zeros((n_samples, n_steps_in, n_features))
+        # y = np.zeros((n_samples, n_steps_out))
+    
+        for i in range(n_samples):
+            X_test[i] = values[i:i + n_steps_in]
+            # y[i] = values[i + n_steps_in:i + n_steps_in + n_steps_out]
+    
+        # y_train, y_test = y[:train_size], y[train_size:]
+    
+        # Apply DWT to each sample
+        X_test_A3 = np.zeros_like(X_test)
+        X_test_D3 = np.zeros_like(X_test)
+        
+        print(X_test)
+    
+        for i in range(len(X_test)):
+            for j in range(n_features):
+                data = X_test[i, :, j]
+                only_A3_signal, only_D3_signal, _, _ = dwt_decomposition(data, wavelet='db7', level=3)
+                X_test_A3[i, :, j] = only_A3_signal
+                X_test_D3[i, :, j] = only_D3_signal
                 
-            latli = 2
-            latui = 7 
-            lonli = 2
-            lonui = 7
-            
-            time = pd.to_datetime(f'{year}-{month}-{day}') + timedelta(hours = int(int(ref_time) + int(time_lag)))
-            data = data[latli:latui,lonli:lonui][::-1]
-            time_prev = time - timedelta(hours = 3)
-
-            if ((int(time_lag)%6) == 0):
-                if len(np.ravel(data)) == 25:
-                    data_temp.loc[time][0:25] =  (np.ravel(data)*21600) - np.ravel(data_temp.loc[time_prev][0:25])
-
-            elif ((int(time_lag)%6) != 0) & ((int(time_lag)%3) == 0):
-                if len(np.ravel(data)) == 25:
-                    data_temp.loc[time][0:25] =  (np.ravel(data)*10800)
-            else:
-                print(filename)
-                
-        data_prec.loc[time_step][0:600] = np.ravel(data_temp)
-        
-
-    data_prec = data_prec.shift(freq=pd.Timedelta(hours=17, minutes=30))
-    data_prec.head()
-    data_prec.columns = map(str, data_prec.columns)
-
-    common_prefix = 'Prec_19.25_72.5','Prec_19.25_72.75','Prec_19.25_73.0','Prec_19.25_73.25','Prec_19.0_72.5','Prec_19.0_72.75','Prec_19.0_73.0','Prec_19.0_73.25','Prec_18.75_72.5','Prec_18.75_72.75','Prec_18.75_73.0','Prec_18.75_73.25','Prec_18.5_72.5','Prec_18.5_72.75','Prec_18.5_73.0','Prec_18.5_73.25'
-    selected_columns = [col for col in data_prec.columns if col.startswith(common_prefix) and '015' <= col[-3:] <= '084']
-    data_prec = data_prec[selected_columns]
-
-    data_prec=data_prec.iloc[:,:128]
-    n_samples_test = data_prec.shape[0]
-    X_test_prec_cnn_lstm = np.full((n_samples_test,8,4,4),np.nan)
-
-    for i in range(data_prec.shape[0]):
-        temp_array = np.full((8,4,4),np.nan)
-        counter = 0
-        for j in np.arange(15,37,3):
-            selected_cols = data_prec.filter(regex=f'_{j:03d}$')
-            temp_array[counter] = selected_cols.iloc[i].values.reshape(4,-1)
-            counter +=1
-        X_test_prec_cnn_lstm[i] = copy.deepcopy(temp_array)
-    X_test_prec_cnn_lstm_daily = np.full((n_samples_test,1,4,4),np.nan)
-
-    for i in range(X_test_prec_cnn_lstm_daily.shape[0]):
-        X_test_prec_cnn_lstm_daily[i,0,:,:] = np.sum(X_test_prec_cnn_lstm[i,0:8,:,:], axis = 0)
-        
-    X_test_prec_cnn_lstm_reshaped = np.expand_dims(X_test_prec_cnn_lstm_daily, axis=1)
-    X_test_prec_cnn_lstm_reshaped = np.moveaxis(X_test_prec_cnn_lstm_reshaped, 1, -1)
-
-    lat_lon = []
-
-    for i in np.arange(18.5,19.5+0.25,0.25):
-        for j in np.arange(72.5, 73+0.25,0.25):
-
-            lat_lon.append([i,j])
-
-    lat_lon = np.array(lat_lon)
-    lat_lon=lat_lon.astype(float)
     
-    def find_closest_pair(lat_lon_array, target_lat, target_lon):
-        delta_lat = lat_lon_array[:, 0] - target_lat
-        delta_lon = lat_lon_array[:, 1] - target_lon
-        
-        distances = np.sqrt(delta_lat**2 + delta_lon**2)
-        closest_index = np.argmin(distances)
-        return lat_lon_array[closest_index]
+        # Load the models for this station
+        custom_objects = {'Orthogonal': Orthogonal}
+        model_A3_path = os.path.join(settings.BASE_DIR, 'files/hourly_models', station.name, f'{station.name}_cA3_LSTM.h5')
+        model_D3_path = os.path.join(settings.BASE_DIR, 'files/hourly_models', station.name, f'{station.name}_cD3_LSTM.h5')
 
-    dict_stations = {}
-    for station in stations:
-        model1_path = os.path.join(settings.BASE_DIR, f'files/Lead Day 1/{station.name}_1/tl.h5')
-        model_path = os.path.join(settings.BASE_DIR, f'files/Lead Day 1/{station.name}_1/CNN.h5')
-        
-        model = load_model(model_path)
-        model1 = load_model(model1_path)
-        
-        predictions = model.predict(X_test_prec_cnn_lstm_reshaped)
-        predictions1 = model1.predict(X_test_prec_cnn_lstm_reshaped)
-        
-        data_GFS_prec_stationwise_testing = {}
-        data_GFS_prec_stationwise = {}
-
-        data_GFS_prec_stationwise[station.name] = pd.DataFrame()
-
-        closest_lat_lon = find_closest_pair(lat_lon, station.latitude, station.longitude)
-        closest_lat = str(closest_lat_lon[0])
-        closest_lon = str(closest_lat_lon[1])
-
-        selected_cols_testing = data_prec.filter(regex=f'{closest_lat}_{closest_lon}')
-        
-        data_GFS_prec_stationwise_testing[station.name] = copy.deepcopy(selected_cols_testing)
-        
-        data_GFS_prec_stationwise_daily = {}
-        
-        data_GFS_prec_stationwise_daily[f'{station.name}'] = pd.DataFrame(index=data_GFS_prec_stationwise_testing[f'{station.name}'].index,columns=['1','2','3'])
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,0] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,0:8].sum(axis = 1)
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,1] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,8:16].sum(axis = 1)
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,2] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,16:24].sum(axis = 1)
-        
-        y_pred_gfs = np.array(data_GFS_prec_stationwise_daily[f'{station.name}']).astype(float)
-
-        predictions_GFS = y_pred_gfs[:, 0]
-
-        GFS = y_pred_gfs[:, 0]
-        GFS2 = y_pred_gfs[:, 1]
-        GFS3 = y_pred_gfs[:, 2]
-        CNN = predictions
-        TL = predictions1
-        Df = pd.DataFrame(columns=['GFS', 'GFS2', 'GFS3', 'TL', 'CNN'])
-        Df['GFS'] = GFS
-        Df['GFS2'] = GFS2
-        Df['GFS3'] = GFS3
-        Df['CNN'] = CNN
-        Df['TL'] = TL
-        threshold = np.percentile(Df['GFS'], 90)
-        Df['Final'] = Df.apply(
-            lambda x: x['TL'] if (x['GFS'] > threshold) or (x['GFS2'] > threshold) or (x['GFS3'] > threshold) else x['CNN'],
-            axis=1)
-        predicted_values = Df['Final']
-        predicted_values = predicted_values.tolist()
-        print('-----------------------------------------------------------------------------------------------------------')
-        DaywisePrediction.objects.create(station=station, day1_rainfall=float(predicted_values[0]), timestamp=datetime.now())
-
-def predict_day2():
-    forecast_hr = np.arange(15, 157, 3)
-    latbounds = [18.5 - 0.25, 19.5]
-    lonbounds = [72.5, 73.5 + 0.25]
-    time_from_ref = np.arange(15, 157, 3)
-
-    columns_prec = []
-    for i in ['Prec']:
-        for time_steps in forecast_hr:
-            for j in np.arange(19.5, 18.25, -0.25):
-                for k in np.arange(72.5, 73.75, 0.25):
-                    columns_prec.append(f'{i}_{j}_{k}_{time_steps:03d}')
-
-    x = datetime.now().replace(second=0, microsecond=0)
-    pd.to_datetime(x)
-    day = x.day
-    month = x.month
-    year = x.year
-
-    start_day = f'{year}-{month}-{day}'
-    end_day = pd.to_datetime(start_day) + timedelta(hours=24)
-    data_prec = pd.DataFrame(index=[pd.to_datetime(start_day) + timedelta(hours=6)], columns=columns_prec)
-    root_directory = os.path.join(settings.BASE_DIR,"files", f"{day:02d}-{month:02d}-{year}")
-
-    for time_step in data_prec.index:
-        year = time_step.year
-        month = time_step.month
-        day = time_step.day
-        ref_time = time_step.hour
-        
-        date_temp = pd.date_range(start=time_step + timedelta(hours=15), end=time_step + timedelta(hours=156), freq='3H')
-        col_temp = np.arange(0, 25)
-        data_temp = pd.DataFrame(index=date_temp, columns=col_temp)
-        
-        for time_lag in time_from_ref:
-            filename = f'gfs.t{ref_time:02d}z.pgrb2.0p25.f{time_lag:03d}'
-            grib = f'{root_directory}/{filename}'
-            grbs = pygrib.open(grib)
-            variable_name_to_select = 'Precipitation rate'
-
-            for grb in grbs.select(name=variable_name_to_select):
-                data = grb.values
-                latitudes, longitudes = grb.latlons()
-                parameter_name = grb.name
-                level_type = grb.typeOfLevel
-                level_value = grb.level
-                valid_time = grb.validDate
-
-            latli = 2
-            latui = 7
-            lonli = 2
-            lonui = 7
-
-            time = pd.to_datetime(f'{year}-{month}-{day}') + timedelta(hours=int(int(ref_time) + int(time_lag)))
-            data = data[latli:latui, lonli:lonui][::-1]
-            time_prev = time - timedelta(hours=3)
-
-            if (int(time_lag) % 6) == 0:
-                if len(np.ravel(data)) == 25:
-                    data_temp.loc[time][0:25] = (np.ravel(data) * 21600) - np.ravel(data_temp.loc[time_prev][0:25])
-            elif (int(time_lag) % 6) != 0 and (int(time_lag) % 3) == 0:
-                if len(np.ravel(data)) == 25:
-                    data_temp.loc[time][0:25] = (np.ravel(data) * 10800)
-            else:
-                print(filename)
-
-        data_prec.loc[time_step][0:1200] = np.ravel(data_temp)
-        
-    data_prec = data_prec.shift(freq=pd.Timedelta(hours=17, minutes=30))
-    data_prec.columns = map(str, data_prec.columns)
-
-    common_prefix = 'Prec_19.25_72.5', 'Prec_19.25_72.75', 'Prec_19.25_73.0', 'Prec_19.25_73.25', 'Prec_19.0_72.5', 'Prec_19.0_72.75', 'Prec_19.0_73.0', 'Prec_19.0_73.25', 'Prec_18.75_72.5', 'Prec_18.75_72.75', 'Prec_18.75_73.0', 'Prec_18.75_73.25', 'Prec_18.5_72.5', 'Prec_18.5_72.75', 'Prec_18.5_73.0', 'Prec_18.5_73.25'
-    selected_columns = [col for col in data_prec.columns if col.startswith(common_prefix) and '015' <= col[-3:] <= '156']
-
-    data_prec = data_prec[selected_columns]
-    data_prec = data_prec.iloc[:, 128:256]
-
-    n_samples_test = data_prec.shape[0]
-
-    X_test_prec_cnn_lstm = np.full((n_samples_test, 8, 4, 4), np.nan)
-
-    for i in range(data_prec.shape[0]):
-        temp_array = np.full((8, 4, 4), np.nan)
-        counter = 0
-        
-        for j in np.arange(39, 61, 3):
-            selected_cols = data_prec.filter(regex=f'_{j:03d}$')
-            temp_array[counter] = selected_cols.iloc[i].values.reshape(4, -1)
-            counter += 1
-            
-        X_test_prec_cnn_lstm[i] = copy.deepcopy(temp_array)
-
-    X_test_prec_cnn_lstm_daily = np.full((n_samples_test, 1, 4, 4), np.nan)
-
-    for i in range(X_test_prec_cnn_lstm_daily.shape[0]):
-        X_test_prec_cnn_lstm_daily[i, 0, :, :] = np.sum(X_test_prec_cnn_lstm[i, 0:8, :, :], axis=0)
-
-    X_test_prec_cnn_lstm_reshaped = np.expand_dims(X_test_prec_cnn_lstm_daily, axis=1)
-    X_test_prec_cnn_lstm_reshaped = np.moveaxis(X_test_prec_cnn_lstm_reshaped, 1, -1)
-
-    lat_lon = []
-    for i in np.arange(18.5, 19.5 + 0.25, 0.25):
-        for j in np.arange(72.5, 73 + 0.25, 0.25):
-            lat_lon.append([i, j])
-    lat_lon = np.array(lat_lon)
-    lat_lon = lat_lon.astype(float)
-
-    def find_closest_pair(lat_lon_array, target_lat, target_lon):
-        delta_lat = lat_lon_array[:, 0] - target_lat
-        delta_lon = lat_lon_array[:, 1] - target_lon
-        distances = np.sqrt(delta_lat**2 + delta_lon**2)
-        closest_index = np.argmin(distances)
-        return lat_lon_array[closest_index]
-
-    dict = {}
-
-    for station in stations:
-        model1_path = os.path.join(settings.BASE_DIR, f'files/2DayLead/{station.name}/tl.h5')
-        model_path = os.path.join(settings.BASE_DIR, f'files/2DayLead/{station.name}/CNN2122old.h5')
-        
-        
-        model = load_model(model_path)
-        model1 = load_model(model1_path)
-
-        predictions = model.predict(X_test_prec_cnn_lstm_reshaped)
-        predictions1 = model1.predict(X_test_prec_cnn_lstm_reshaped)
-
-        data_GFS_prec_stationwise_testing = {}
-        data_GFS_prec_stationwise = {}
-
-        data_GFS_prec_stationwise[station] = pd.DataFrame()
-        
-
-        closest_lat_lon = find_closest_pair(lat_lon, station.latitude, station.longitude)
-        closest_lat = str(closest_lat_lon[0])
-        closest_lon = str(closest_lat_lon[1])
-
-        selected_cols_testing = data_prec.filter(regex=f'{closest_lat}_{closest_lon}')
-        
-        data_GFS_prec_stationwise_testing[station.name] = copy.deepcopy(selected_cols_testing)
-        
-        data_GFS_prec_stationwise_daily = {}
-        
-        data_GFS_prec_stationwise_daily[f'{station.name}'] = pd.DataFrame(index=data_GFS_prec_stationwise_testing[f'{station.name}'].index,columns=['1','2','3'])
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,0] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,0:8].sum(axis = 1)
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,1] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,8:16].sum(axis = 1)
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,2] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,16:24].sum(axis = 1)
-        
-        y_pred_gfs = np.array(data_GFS_prec_stationwise_daily[f'{station.name}']).astype(float)
-        predictions_GFS = y_pred_gfs[:, 0]
-
-        GFS = y_pred_gfs[:, 0]
-        GFS2 = y_pred_gfs[:, 1]
-        GFS3 = y_pred_gfs[:, 2]
-        CNN = predictions
-        TL = predictions1
-        Df = pd.DataFrame(columns=['GFS', 'GFS2', 'GFS3', 'TL', 'CNN'])
-        Df['GFS'] = GFS
-        Df['GFS2'] = GFS2
-        Df['GFS3'] = GFS3
-        Df['CNN'] = CNN
-        Df['TL'] = TL
-
-        threshold2 = np.percentile(Df['GFS2'], 90)
-        Df['Final'] = Df.apply(
-            lambda x: x['TL'] if (x['GFS2'] > threshold2) or (x['GFS3'] > threshold2) else x['CNN'],
-            axis=1)
-
-        predicted_values = Df['Final']
-        predicted_values = predicted_values.tolist()
-        
-        today_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
-        today_data.day2_rainfall = float(predicted_values[0])
-        today_data.save()
+        network_A3 = load_model(model_A3_path, custom_objects=custom_objects)
+        network_D3 = load_model(model_D3_path, custom_objects=custom_objects)
     
-def predict_day3():
-    forecast_hr = np.arange(15, 157, 3)
-    latbounds = [18.5 - 0.25, 19.5]
-    lonbounds = [72.5, 73.5 + 0.25]
-    time_from_ref = np.arange(15, 157, 3)
-
-    columns_prec = []
-    for i in ['Prec']:
-        for time_steps in forecast_hr:
-            for j in np.arange(19.5, 18.25, -0.25):
-                for k in np.arange(72.5, 73.75, 0.25):
-                    columns_prec.append(f'{i}_{j}_{k}_{time_steps:03d}')
-
-    x = datetime.now().replace(second=0, microsecond=0)
-    pd.to_datetime(x)
-    day = x.day
-    month = x.month
-    year = x.year
-
-    start_day = f'{year}-{month}-{day}'
-    end_day = pd.to_datetime(start_day) + timedelta(hours=24)
-    data_prec = pd.DataFrame(index=[pd.to_datetime(start_day) + timedelta(hours=6)], columns=columns_prec)
-    root_directory = os.path.join(settings.BASE_DIR,"files", f"{day:02d}-{month:02d}-{year}")
-
-    for time_step in data_prec.index:
-        year = time_step.year
-        month = time_step.month
-        day = time_step.day
-        ref_time = time_step.hour
-
-        date_temp = pd.date_range(start=time_step + timedelta(hours=15), end=time_step + timedelta(hours=156), freq='3H')
-        col_temp = np.arange(0, 25)
-
-        data_temp = pd.DataFrame(index=date_temp, columns=col_temp)
-
-        for time_lag in time_from_ref:
-            filename = f'gfs.t{ref_time:02d}z.pgrb2.0p25.f{time_lag:03d}'
-            grib = f'{root_directory}/{filename}'
-            grbs = pygrib.open(grib)
-            variable_name_to_select = 'Precipitation rate'
-
-            for grb in grbs.select(name=variable_name_to_select):
-                data = grb.values
-                latitudes, longitudes = grb.latlons()
-                parameter_name = grb.name
-                level_type = grb.typeOfLevel
-                level_value = grb.level
-                valid_time = grb.validDate
-
-            latli = 2
-            latui = 7
-            lonli = 2
-            lonui = 7
-
-            time = pd.to_datetime(f'{year}-{month}-{day}') + timedelta(hours=int(ref_time) + int(time_lag))
-            data = data[latli:latui, lonli:lonui][::-1]
-            time_prev = time - timedelta(hours=3)
-
-            if (int(time_lag) % 6) == 0:
-                if len(np.ravel(data)) == 25:
-                    data_temp.loc[time][0:25] = (np.ravel(data) * 21600) - np.ravel(data_temp.loc[time_prev][0:25])
-            elif (int(time_lag) % 6) != 0 & (int(time_lag) % 3) == 0:
-                if len(np.ravel(data)) == 25:
-                    data_temp.loc[time][0:25] = (np.ravel(data) * 10800)
-            else:
-                print(filename)
-
-        data_prec.loc[time_step][0:1200] = np.ravel(data_temp)
-
-    data_prec = data_prec.shift(freq=pd.Timedelta(hours=17, minutes=30))
-    data_prec.head()
-
-    data_prec.columns = map(str, data_prec.columns)
-    common_prefix = 'Prec_19.25_72.5','Prec_19.25_72.75','Prec_19.25_73.0','Prec_19.25_73.25','Prec_19.0_72.5','Prec_19.0_72.75','Prec_19.0_73.0','Prec_19.0_73.25','Prec_18.75_72.5','Prec_18.75_72.75','Prec_18.75_73.0','Prec_18.75_73.25','Prec_18.5_72.5','Prec_18.5_72.75','Prec_18.5_73.0','Prec_18.5_73.25'
-    selected_columns = [col for col in data_prec.columns if col.startswith(common_prefix) and '015' <= col[-3:] <= '084']
-
-    data_prec = data_prec[selected_columns]
-    data_prec = data_prec.iloc[:, 256:384]
-    n_samples_test = data_prec.shape[0]
-
-    X_test_prec_cnn_lstm = np.full((n_samples_test, 8, 4, 4), np.nan)
+        # Predict for multiple hours for A3
+        predictions_all_hours_A3 = []
+        y_predicted_A3_test = network_A3.predict(X_test_A3)
+        predictions_all_hours_A3.append(y_predicted_A3_test)
     
-    for i in range(data_prec.shape[0]):
-        temp_array = np.full((8, 4, 4), np.nan)
-        counter = 0
+        # Initialize appended_data with the initial test data and the first hour prediction
+        X_test_flattened_A3 = X_test_A3.reshape(-1, X_test_A3.shape[1])
+        appended_data_A3 = np.concatenate((X_test_flattened_A3, y_predicted_A3_test), axis=1)
 
-        for j in np.arange(63, 85, 3):
-            selected_cols = data_prec.filter(regex=f'_{j:03d}$')
-            temp_array[counter] = selected_cols.iloc[i].values.reshape(4, -1)
-            counter += 1
+        # Predict the second hour
+        X_test_new_A3 = np.delete(appended_data_A3, 0, axis=1)
+        X_test_new_reshaped_A3 = np.reshape(X_test_new_A3, (X_test_new_A3.shape[0], X_test_new_A3.shape[1], 1))
+        y_predicted_A3_test_2_hour_lead = network_A3.predict(X_test_new_reshaped_A3)
+        predictions_all_hours_A3.append(y_predicted_A3_test_2_hour_lead)
+        appended_data_A3 = np.concatenate((appended_data_A3, y_predicted_A3_test_2_hour_lead), axis=1)
 
-        X_test_prec_cnn_lstm[i] = copy.deepcopy(temp_array)
+        for hour in range(3, num_hours + 1):
+            # For the current hour onwards, delete the first (hour - 1) columns
+            X_test_new_A3 = np.delete(appended_data_A3, slice(0, hour - 1), axis=1)
+            X_test_new_reshaped_A3 = np.reshape(X_test_new_A3, (X_test_new_A3.shape[0], X_test_new_A3.shape[1], 1))
+            y_predicted_next_hour_A3 = network_A3.predict(X_test_new_reshaped_A3)
+            appended_data_A3 = np.concatenate((appended_data_A3, y_predicted_next_hour_A3), axis=1)
+            predictions_all_hours_A3.append(y_predicted_next_hour_A3)
+    
+        predictions_all_hours_array_A3 = np.array(predictions_all_hours_A3)
+        # predictions_all_stations_A3[station.name] = predictions_all_hours_array_A3
 
-    X_test_prec_cnn_lstm_daily = np.full((n_samples_test, 1, 4, 4), np.nan) 
+        # Predict for multiple hours for D3
+        predictions_all_hours_D3 = []
+        y_predicted_D3_test = network_D3.predict(X_test_D3)
+        predictions_all_hours_D3.append(y_predicted_D3_test)
+    
+        # Initialize appended_data with the initial test data and the first hour prediction
+        X_test_flattened_D3 = X_test_D3.reshape(-1, X_test_D3.shape[1])
+        appended_data_D3 = np.concatenate((X_test_flattened_D3, y_predicted_D3_test), axis=1)
 
-    for i in range(X_test_prec_cnn_lstm_daily.shape[0]):
-        X_test_prec_cnn_lstm_daily[i, 0, :, :] = np.sum(X_test_prec_cnn_lstm[i, 0:8, :, :], axis=0)
-
-    X_test_prec_cnn_lstm_daily.shape
-
-    X_test_prec_cnn_lstm_reshaped = np.expand_dims(X_test_prec_cnn_lstm_daily, axis=1)
-    X_test_prec_cnn_lstm_reshaped = np.moveaxis(X_test_prec_cnn_lstm_reshaped, 1, -1)
-    X_test_prec_cnn_lstm_reshaped.shape
-
-    lat_lon = []
-
-    for i in np.arange(18.5, 19.5 + 0.25, 0.25):
-        for j in np.arange(72.5, 73 + 0.25, 0.25):
-            lat_lon.append([i, j])
-
-    lat_lon = np.array(lat_lon)
-    lat_lon = lat_lon.astype(float)
-
-    def find_closest_pair(lat_lon_array, target_lat, target_lon):
-        delta_lat = lat_lon_array[:, 0] - target_lat
-        delta_lon = lat_lon_array[:, 1] - target_lon
-        distances = np.sqrt(delta_lat**2 + delta_lon**2)
-        closest_index = np.argmin(distances)
-        return lat_lon_array[closest_index]
-
-    start_day
-    dict = {}
-
-    for station in stations:
-        model1_path = os.path.join(settings.BASE_DIR, f'files/3DayLead/{station.name}_1/tl.h5')
-        model_path = os.path.join(settings.BASE_DIR, f'files/3DayLead/{station.name}_1/CNN2122old.h5')
-
-        model = load_model(model_path)
-        model1 = load_model(model1_path)
-        
-        predictions = model.predict(X_test_prec_cnn_lstm_reshaped)
-        predictions1 = model1.predict(X_test_prec_cnn_lstm_reshaped)
-        
-        data_GFS_prec_stationwise_testing = {}
-        data_GFS_prec_stationwise = {}
-
-        data_GFS_prec_stationwise[station.name] = pd.DataFrame()
-
-        closest_lat_lon = find_closest_pair(lat_lon, station.latitude, station.longitude)
-        closest_lat = str(closest_lat_lon[0])
-        closest_lon = str(closest_lat_lon[1])
-
-        selected_cols_testing = data_prec.filter(regex=f'{closest_lat}_{closest_lon}')
-        
-        data_GFS_prec_stationwise_testing[station.name] = copy.deepcopy(selected_cols_testing)
-        
-        data_GFS_prec_stationwise_daily = {}
-        
-        data_GFS_prec_stationwise_daily[f'{station.name}'] = pd.DataFrame(index=data_GFS_prec_stationwise_testing[f'{station.name}'].index,columns=['1','2','3'])
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,0] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,0:8].sum(axis = 1)
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,1] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,8:16].sum(axis = 1)
-        data_GFS_prec_stationwise_daily[f'{station.name}'].iloc[:,2] = data_GFS_prec_stationwise_testing[f'{station.name}'].iloc[:,16:24].sum(axis = 1)
-        
-        y_pred_gfs = np.array(data_GFS_prec_stationwise_daily[f'{station.name}']).astype(float)
-
-        predictions_GFS = y_pred_gfs[:, 0]
-
-        GFS = y_pred_gfs[:, 0]
-        GFS2 = y_pred_gfs[:, 1]
-        GFS3 = y_pred_gfs[:, 2]
-        CNN = predictions
-        TL = predictions1
-        Df = pd.DataFrame(columns=['GFS', 'GFS2', 'GFS3', 'TL', 'CNN'])
-        Df['GFS'] = GFS
-        Df['GFS2'] = GFS2
-        Df['GFS3'] = GFS3
-        Df['CNN'] = CNN
-        Df['TL'] = TL
-        threshold = np.percentile(Df['GFS'], 90)
-        Df['Final'] = Df.apply(
-            lambda x: x['TL'] if (x['GFS'] > threshold) or (x['GFS2'] > threshold) or (x['GFS3'] > threshold) else x['CNN'],
-            axis=1)
-        predicted_values = Df['Final']
-        predicted_values = predicted_values.tolist()
-        
-        today_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
-        today_data.day3_rainfall = float(predicted_values[0])
-        today_data.save()
-        
+        # Predict the second hour
+        X_test_new_D3 = np.delete(appended_data_D3, 0, axis=1)
+        X_test_new_reshaped_D3 = np.reshape(X_test_new_D3, (X_test_new_D3.shape[0], X_test_new_D3.shape[1], 1))
+        y_predicted_D3_test_2_hour_lead = network_D3.predict(X_test_new_reshaped_D3)
+        predictions_all_hours_D3.append(y_predicted_D3_test_2_hour_lead)
+        appended_data_D3 = np

@@ -33,7 +33,6 @@ class Migration(migrations.Migration):
                 ('day1_rainfall', models.FloatField(default=0)),
                 ('day2_rainfall', models.FloatField(default=0)),
                 ('day3_rainfall', models.FloatField(default=0)),
-                ('day4_rainfall', models.FloatField(default=0)),
                 ('station', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='awsstations.awsstation')),
             ],
         ),

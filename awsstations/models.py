@@ -35,6 +35,15 @@ class DaywisePrediction(models.Model):
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
     
+class HourlyPrediction(models.Model):
+    station = models.ForeignKey(AWSStation, on_delete=models.CASCADE, blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True, null=True)
+
+    hr_24_rainfall = models.JSONField(default=dict)
+
+    def __str__(self):
+        return self.station.name + " " + str(self.timestamp)
+    
 
 
 class TrainStation(models.Model):

@@ -137,8 +137,6 @@ def predict_hourly():
     
         predictions_all_hours_array_D3 = np.array(predictions_all_hours_D3)
         
-        # predictions_all_stations_D3[station.name] = predictions_all_hours_array_D3
-    
 
         correlations = []
         for hour in range(num_hours):
@@ -146,5 +144,3 @@ def predict_hourly():
             cD3_pred = predictions_all_hours_D3[hour].flatten()
             cDoverall_pred = (cA3_pred + cD3_pred)
             print(cDoverall_pred)
-
-predict_hourly()

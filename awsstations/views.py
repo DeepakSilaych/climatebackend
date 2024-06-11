@@ -7,6 +7,12 @@ from rest_framework.response import Response
 from django.db.models.functions import TruncDate, TruncHour
 from django.db.models import Sum
 
+
+
+from .utils.DayWisePrediction import dailyprediction
+from .utils.gfs import download_gfs_data
+from .utils.hourly_prediction import predict_hourly
+
 class StationListView(APIView):
     def get(self, request):
         stations = AWSStation.objects.all()
@@ -47,3 +53,11 @@ class StationDetailView(APIView):
             'hourly_data': hourly_data,
             'daily_data': daily_data
         })
+
+
+class Test(APIView):
+    def get(self, request):
+        # download_gfs_data()
+        dailyprediction()
+        # predict_hourly()
+        return Response("Done")
