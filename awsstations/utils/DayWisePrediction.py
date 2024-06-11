@@ -249,20 +249,6 @@ def dailyprediction():
         return lat_lon_array[closest_index]
 
 
-    predicted_values_dict_1d = {}
-    predicted_values_dict_GFS_1d = {}
-    predicted_values_dict_CNN_1d = {}
-    predicted_values_dict_TL_1d = {}
-    predicted_values_dict_2d = {}
-    predicted_values_dict_GFS_2d = {}
-    predicted_values_dict_GFS3_2d = {}
-    predicted_values_dict_CNN_2d = {}
-    predicted_values_dict_TL_2d = {}
-    predicted_values_dict_3d = {}
-    predicted_values_dict_GFS_3d = {}
-    predicted_values_dict_CNN_3d = {}
-    predicted_values_dict_TL_3d = {}
-
     with open(os.path.join(settings.BASE_DIR, 'files', 'daily_threshold.pkl'), 'rb') as f:
         thresholds_dict = pickle.load(f)
 
@@ -282,7 +268,7 @@ def dailyprediction():
 
         data_GFS_prec_stationwise[station.name] = pd.DataFrame()
         
-        station_lat = station.latitudes
+        station_lat = station.latitude
         station_lon = station.longitude
 
         closest_lat_lon = find_closest_pair(lat_lon, station_lat, station_lon)
@@ -328,11 +314,7 @@ def dailyprediction():
             lambda x: x['TL'] if (x['GFS'] > threshold) or (x['GFS2'] > threshold) or (x['GFS3'] > threshold) else x['CNN'],
             axis=1)
         
-        
-        predicted_values_dict_1d[station.name] = Df['Final']
-        predicted_values_dict_GFS_1d[station.name] = Df['GFS3']
-        predicted_values_dict_CNN_1d[station.name] = Df['CNN']
-        predicted_values_dict_TL_1d[station.name] = Df['TL']
+        day1 = Df['Final'].iloc[0]
         
 
         model_path = os.path.join(settings.BASE_DIR, 'files', '2DayLead', station.name, 'CNN2122old.h5')
@@ -399,15 +381,11 @@ def dailyprediction():
             lambda x: x['TL'] if (x['GFS2'] > threshold2) or (x['GFS3'] > threshold2) else x['CNN'],
             axis=1)
 
-        predicted_values_dict_2d[station.name] = Df['Final']
-        predicted_values_dict_GFS_2d[station.name] = Df['GFS2']
-        predicted_values_dict_CNN_2d[station.name] = Df['CNN']
-        predicted_values_dict_TL_2d[station.name] = Df['TL']
-        predicted_values_dict_GFS3_2d[station.name] = Df['GFS3']
+        day2 = Df['Final'].iloc[0]
         
 
-        model_path = os.path.join(settings.BASE_DIR, 'files', '3DayLead', station.name, 'CNN2122old.h5')
-        model1_path = os.path.join(settings.BASE_DIR, 'files', '3DayLead', station.name, 'tl.h5')
+        model_path = os.path.join(settings.BASE_DIR, 'files', '3DayLead', station.name+'_1', 'CNN2122old.h5')
+        model1_path = os.path.join(settings.BASE_DIR, 'files', '3DayLead', station.name+'_1', 'tl.h5')
         
         model = load_model(model_path)
         model1 = load_model(model1_path)
@@ -471,15 +449,9 @@ def dailyprediction():
         Df['Final'] = Df.apply(lambda x: x['TL'] if (x['GFS3'] > threshold) or (x['GFS4'] > threshold) or (x['GFS5'] > threshold) else x['CNN'], axis = 1)
         
         Df['Final'] = np.nan_to_num(Df['Final'])
-        predicted_values_dict_3d[station.name] = Df['Final']
-        predicted_values_dict_GFS_3d[station.name] = Df['GFS3']
-        predicted_values_dict_CNN_3d[station.name] = Df['CNN']
-        predicted_values_dict_TL_3d[station.name] = Df['TL']
+        Day3 = Df['Final'].iloc[0]
 
-        print("station:", station)
-        print("predicted_values_dict_1d:", predicted_values_dict_1d)
-        print("predicted_values_dict_2d:", predicted_values_dict_2d)
-        print("predicted_values_dict_3d:", predicted_values_dict_3d)
+        DaywisePrediction.objects.create(station=station, day1_rainfall=day1, day2_rainfall=day2, day3_rainfall=Day3)
 
 
 

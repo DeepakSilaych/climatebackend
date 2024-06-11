@@ -6,7 +6,11 @@ from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
 from django.conf import settings
 import os
-from awsstations.models import StationData, AWSStation
+from awsstations.models import StationData, AWSStation, HourlyPrediction
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 def dwt_decomposition(data, wavelet='db7', level=3):
     coeffs = pywt.wavedec(data, wavelet, level=level)
@@ -19,6 +23,7 @@ def dwt_decomposition(data, wavelet='db7', level=3):
 
 
 def predict_hourly():
+    now = pd.Timestamp.now(tz='Asia/Kolkata')
     res = {}
     # Define parameters
     n_steps_in = 3
@@ -34,26 +39,20 @@ def predict_hourly():
 
     # Loop through each station
     for station in AWSStation.objects.all():
-        print(f'Processing station: {station}')
+        temp = {}
         
         # fetch all station data in latest to oldest order
-        stationdata = StationData.objects.filter(station=station).order_by('-timestamp')
+        stationdata = StationData.objects.filter(station=station).order_by('-timestamp')[:384]
         
-        # print rainfall data
         stationdata = [data.rainfall for data in stationdata]
         
         #convert 15min data to hourly data by adding every 4 data
         stationdata_hourly = [sum(stationdata[i:i+4]) for i in range(0, len(stationdata), 4)] 
-        print(stationdata_hourly)
-        
         values = np.array(stationdata_hourly).reshape(-1, 1)
-        print(values)
-        
         n_features = values.shape[1]
     
         # Prepare the input and output sequences
         n_samples = len(values) - n_steps_in + 1
-        print("------------------------------------------------------------------------------------------------------------------------------",n_samples)
         X_test = np.zeros((n_samples, n_steps_in, n_features))
         # y = np.zeros((n_samples, n_steps_out))
     
@@ -67,7 +66,6 @@ def predict_hourly():
         X_test_A3 = np.zeros_like(X_test)
         X_test_D3 = np.zeros_like(X_test)
         
-        print(X_test)
     
         for i in range(len(X_test)):
             for j in range(n_features):
@@ -143,4 +141,10 @@ def predict_hourly():
             cA3_pred = predictions_all_hours_A3[hour].flatten()
             cD3_pred = predictions_all_hours_D3[hour].flatten()
             cDoverall_pred = (cA3_pred + cD3_pred)
-            print(cDoverall_pred)
+
+            temp [str(now + pd.Timedelta(hours=hour+1))] = cDoverall_pred.tolist()[0]
+    
+        HourlyPrediction.objects.create(station=station, hr_24_rainfall=temp)
+        res[station.name] = temp
+
+    return res

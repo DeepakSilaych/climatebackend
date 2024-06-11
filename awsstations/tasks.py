@@ -7,8 +7,10 @@ from django.shortcuts import get_object_or_404
 
 from .models import AWSStation, StationData, TrainStation
 from .utils.aws import fetch_aws_data
-from .utils.daily_prediction import predict_day1, predict_day2, predict_day3
 from .utils.gfs import download_gfs_data
+from .utils.hourly_prediction import predict_hourly
+from .utils.DayWisePrediction import dailyprediction
+
 
 
 logger = logging.getLogger(__name__)
@@ -23,10 +25,12 @@ def scheduled_15_min():
 @shared_task
 def scheduled_daily():
     download_gfs_data()
-    predict_day1()
-    predict_day2()
-    predict_day3()
+    dailyprediction()
     logger.info("++++++++++++++++++++++++Daily Prediction Done")
+
+def scheduled_hourly():
+    predict_hourly()
+    logger.info("************************Hourly Prediction Done")
 #---------------------------------------------------------------------------------------------------------------------
 
 def fetch_and_store_data():

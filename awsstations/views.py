@@ -1,7 +1,7 @@
 
 # Create your views here.
-from .models import AWSStation, StationData
-from .serializers import AWSStationSerializer, StationDataSerializer
+from .models import AWSStation, StationData, DaywisePrediction, HourlyPrediction
+from .serializers import AWSStationSerializer, StationDataSerializer, DaywisePredictionSerializer, HourlyPredictionSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models.functions import TruncDate, TruncHour
@@ -9,6 +9,7 @@ from django.db.models import Sum
 
 
 
+import pandas as pd
 from .utils.DayWisePrediction import dailyprediction
 from .utils.gfs import download_gfs_data
 from .utils.hourly_prediction import predict_hourly
@@ -39,25 +40,37 @@ class StationDetailView(APIView):
         station = AWSStation.objects.get(station_id=station_id)
         serializer = AWSStationSerializer(station)
         
-        now_time = now()
+        now_time = pd.Timestamp.now(tz='Asia/Kolkata')
 
         four_hours_ago = now_time - timedelta(hours=6)
+
         hourly_data_in_min = StationData.objects.filter(station=station, timestamp__gte=four_hours_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        hourly_data = hourly_data_in_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')[:5]
+        hourly_data = hourly_data_in_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')[:6]
+
+        # add future timestamp to hourly_data
+        pred_hrly = HourlyPrediction.objects.filter(station=station).latest('timestamp')
+        pred_hrly_data = {}
+        for i in range(24):
+            pred_hrly_data[str((now_time.hour + i)%24)+":00"] = pred_hrly.hr_24_rainfall[str(i)]
         
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data_in_min = StationData.objects.filter(station=station, timestamp__gte=three_days_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[:3]     
+        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[:3]
+
+        pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
+        pred_daily_data = {
+            str(now_time.date() + timedelta(days=0)): pred_daily_data.day1_rainfall,
+            str(now_time.date() + timedelta(days=1)): pred_daily_data.day2_rainfall,
+            str(now_time.date() + timedelta(days=2)): pred_daily_data.day3_rainfall,
+        }
+
         return Response({
             'station': serializer.data,
-            'hourly_data': hourly_data,
-            'daily_data': daily_data
+
+            'obs_hrly_data': hourly_data,
+            'pred_hrly_data': pred_hrly_data,
+
+            'obs_daily_data': daily_data,
+            'pred_daily_data': pred_daily_data,
         })
 
-
-class Test(APIView):
-    def get(self, request):
-        # download_gfs_data()
-        dailyprediction()
-        # predict_hourly()
-        return Response("Done")
