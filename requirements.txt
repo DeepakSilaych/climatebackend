@@ -15,6 +15,7 @@ cron-descriptor==1.4.3
 cycler==0.12.1
 Django==5.0.6
 django-celery-beat==2.6.0
+django-cors-headers==4.0.0
 django-rest-framework==0.1.0
 django-timezone-field==6.1.0
 djangorestframework==3.15.1
@@ -25,6 +26,7 @@ geographiclib==2.0
 geopy==2.4.1
 google-pasta==0.2.0
 grpcio==1.64.1
+gunicorn==20.1.0
 h5py==3.11.0
 idna==3.7
 keras==3.3.3
@@ -73,4 +75,3 @@ wcwidth==0.2.13
 Werkzeug==3.0.3
 wheel==0.43.0
 wrapt==1.16.0
-    

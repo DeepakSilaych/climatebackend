@@ -1,0 +1,17 @@
+# gitignore for django project
+
+/.vscode
+/collectstatic
+
+/celeryschedule
+/env
+/celerybeat-schedule
+
+*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyz
+*.pyw
+
+server.sock
