@@ -9,6 +9,9 @@
 /celerybeat-schedule
 
 */__pycache__/
+*/migrations/
+*/__pycache__/*
+*/migrations/*
 *.pyc
 *.pyo
 *.pyd
