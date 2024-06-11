@@ -37,14 +37,13 @@ class StationDetailView(APIView):
 
         four_hours_ago = now_time - timedelta(hours=6)
         hourly_data_in_min = StationData.objects.filter(station=station, timestamp__gte=four_hours_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        hourly_data = hourly_data_in_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')
+        hourly_data = hourly_data_in_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')[:5]
         
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data_in_min = StationData.objects.filter(station=station, timestamp__gte=three_days_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
-        
+        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[:3]     
         return Response({
             'station': serializer.data,
             'hourly_data': hourly_data,
-            'daily_data': daily_data,
+            'daily_data': daily_data
         })
