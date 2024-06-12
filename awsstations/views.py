@@ -65,6 +65,7 @@ class StationDetailView(APIView):
 
 
         return Response({
+            'station': serializer.data,
             'hrly_data': update_hrly_data,
             'daily_data': update_daily_data,
         })
