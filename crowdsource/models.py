@@ -13,7 +13,7 @@ class CSFormData(models.Model):
     longitude = models.FloatField()
 
     def __str__(self):
-        return self.waterlevel + ' ' + self.location 
+        return str(int(self.waterlevel)) + " at " + self.location
 # tweet data model
 
 # class Tweet(models.Model):
