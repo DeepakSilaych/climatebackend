@@ -5,3 +5,8 @@ class CSFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = CSFormData
         fields = ['waterlevel', 'latitude', 'longitude']
+
+class FormDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CSFormData
+        fields = '__all__'

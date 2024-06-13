@@ -3,27 +3,43 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import CSFormData
-from .serializers import CSFormSerializer
+from .serializers import CSFormSerializer, FormDataSerializer
 
 from .utils import geolocate_text, cord_to_text
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 class StoreData(APIView):
     def post(self, request):
-        serializer = CSFormSerializer(data=request.data)
-        if serializer.is_valid():
-            data = serializer.validated_data
-            if data.get('latitude') == 0 or data.get('longitude') == 0:
-                if data.get('location') is None:
-                    return Response({'error': 'Location is required'}, status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    latitude, longitude = geolocate_text(data.get('location'))
-                    if latitude is None or longitude is None:
-                        return JsonResponse({'error': 'Invalid location'}, status=status.HTTP_400_BAD_REQUEST)
-                    else:
-                        data['latitude'] = latitude
-                        data['longitude'] = longitude
-            serializer.save()
-            return JsonResponse({'message': 'Data stored successfully'}, status=status.HTTP_201_CREATED)
+        data = request.data
+        print('request.data:', request.data)
+
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        location = data.get('location')
+        waterlevel = data.get('waterlevel')
+        feedback = data.get('feedback')
+
+        if latitude is None or longitude is None:
+            if location is not None:
+                try:
+                    lat, long = geolocate_text(location)
+                    CSFormData.objects.create(waterlevel=waterlevel, location=location, latitude=lat, longitude=long, feedback=feedback)
+                    return Response({'message': 'Data stored successfully'})
+                except Exception as e:
+                    return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            else:
+                return Response({'error': 'Invalid location'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                CSFormData.objects.create(waterlevel=waterlevel, location=location, latitude=latitude, longitude=longitude, feedback=feedback)
+                return Response({'message': 'Data stored successfully'})
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class GetData(APIView):

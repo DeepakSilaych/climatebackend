@@ -5,7 +5,7 @@ class AWSStation(models.Model):
     name = models.CharField(max_length=100)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-    curr_rainfall = models.FloatField(default=0)
+    rainfall = models.FloatField(default=0)
     curr_temp = models.FloatField(default=0)
     curr_windspeed = models.FloatField(default=0)
 
