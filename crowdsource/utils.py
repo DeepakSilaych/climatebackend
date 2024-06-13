@@ -18,4 +18,11 @@ def process_text(location_text):
     print('processed_text:', processed_text)
     return processed_text
 
+def cord_to_text(lat, long):
+    geolocator = Nominatim(user_agent="cord_to_text")
+    location = geolocator.reverse(f"{lat}, {long}")
+    if location:
+        return location.address
+    else:
+        return None
                                                                                                                          
