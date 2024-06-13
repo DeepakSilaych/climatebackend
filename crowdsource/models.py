@@ -11,9 +11,6 @@ class CSFormData(models.Model):
 
     latitude = models.FloatField()
     longitude = models.FloatField()
-
-    def __str__(self):
-        return str(int(self.waterlevel)) + " at " + self.location
 # tweet data model
 
 # class Tweet(models.Model):
