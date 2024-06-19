@@ -54,16 +54,25 @@ class StationDetailView(APIView):
 
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data_in_min = StationData.objects.filter(station=station, timestamp__gte=three_days_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[ :3]
+        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[ :4]
         pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
 
         update_daily_data = {}
-        for i in range(len(daily_data)):
-            update_daily_data[str(daily_data[i]['date'])] = daily_data[i]['total_rainfall']
+        if pred_daily_data.timestamp.date() == now_time.date():
+            for i in [1, 2, 3]:
+                update_daily_data[str(daily_data[i]['date'])] = daily_data[i]['total_rainfall']
+
+            update_daily_data [str(now_time.date() + timedelta(days=1))] = pred_daily_data.day1_rainfall
+            update_daily_data [str(now_time.date() + timedelta(days=2))] = pred_daily_data.day2_rainfall
+            update_daily_data [str(now_time.date() + timedelta(days=3))] = pred_daily_data.day3_rainfall
         
-        update_daily_data [str(now_time.date() + timedelta(days=0))] = pred_daily_data.day1_rainfall
-        update_daily_data [str(now_time.date() + timedelta(days=1))] = pred_daily_data.day2_rainfall
-        update_daily_data [str(now_time.date() + timedelta(days=2))] = pred_daily_data.day3_rainfall
+        else :
+            for i in [0, 1, 2]:
+                update_daily_data[str(daily_data[i]['date'])] = daily_data[i]['total_rainfall']
+        
+            update_daily_data [str(now_time.date() + timedelta(days=0))] = pred_daily_data.day1_rainfall
+            update_daily_data [str(now_time.date() + timedelta(days=1))] = pred_daily_data.day2_rainfall
+            update_daily_data [str(now_time.date() + timedelta(days=2))] = pred_daily_data.day3_rainfall
 
 
 
