@@ -14,12 +14,13 @@ from rest_framework import status
 class StoreData(APIView):
     def post(self, request):
         data = request.data
-
         latitude = data.get('latitude')
         longitude = data.get('longitude')
         location = data.get('location')
         waterlevel = data.get('waterlevel')
         feedback = data.get('feedback')
+
+        print(data)
 
         if latitude is None or longitude is None:
             if location is not None:
