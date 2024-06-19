@@ -34,7 +34,6 @@ class StationDetailView(APIView):
         hrly_data = list(hrly_data)
 
         pred_hrly = HourlyPrediction.objects.filter(station=station).latest('timestamp')
-        print (pred_hrly.hr_24_rainfall)
         update_hrly_data = []
 
         for i in range(len(hrly_data)):
@@ -42,11 +41,15 @@ class StationDetailView(APIView):
                 'hour': str((now_time.hour - 6 + i)%24)+":00",
                 'total_rainfall': hrly_data[i]['total_rainfall']
             })
-        for i in range(24):
+
+        index = 0
+        for hour, rainfall in pred_hrly.hr_24_rainfall.items():
             update_hrly_data.append({
-                'hour': str((now_time.hour + i)%24)+":00",
-                'total_rainfall': pred_hrly.hr_24_rainfall.get(str(i), 0)
+                'hour': str((now_time.hour + index)%24)+":00",
+                'total_rainfall': rainfall  
             })
+
+            index += 1
 
 
         three_days_ago = now_time.date() - timedelta(days=3)
@@ -69,4 +72,3 @@ class StationDetailView(APIView):
             'hrly_data': update_hrly_data,
             'daily_data': update_daily_data,
         })
-

@@ -14,7 +14,6 @@ from rest_framework import status
 class StoreData(APIView):
     def post(self, request):
         data = request.data
-        print('request.data:', request.data)
 
         latitude = data.get('latitude')
         longitude = data.get('longitude')
@@ -52,11 +51,8 @@ class GetLocation(APIView):
     def post(self, request):
         latitude = request.data.get('lat')
         longitude = request.data.get('long')
-        print('latitude:', latitude)
-        print('longitude:', longitude)
         location = cord_to_text(latitude, longitude)
         if location:
-            print('location:', location)
             return Response({'location': location})
         else:
             return Response({'error': 'Invalid coordinates'}, status=status.HTTP_400_BAD_REQUEST)
