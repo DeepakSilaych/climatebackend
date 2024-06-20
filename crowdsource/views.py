@@ -10,6 +10,8 @@ from .utils import geolocate_text, cord_to_text
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.utils import timezone
+from datetime import timedelta
 
 class StoreData(APIView):
     def post(self, request):
@@ -44,7 +46,8 @@ class StoreData(APIView):
 
 class GetData(APIView):
     def get(self, request):
-        data = CSFormData.objects.all()
+        # last 24 hrs data
+        data = CSFormData.objects.filter(timestamp__gte=timezone.now()-timedelta(days=1))
         serializer = CSFormSerializer(data, many=True)
         return Response(serializer.data)
     

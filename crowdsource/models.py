@@ -3,11 +3,13 @@ from django.db import models
 
 # form data model
 class CSFormData(models.Model):
-    timestamp = models.DateTimeField(auto_now_add=True, null=True)
+    
     waterlevel = models.FloatField()
 
     location = models.TextField(blank=True, null=True)
     feedback = models.TextField(blank=True, null=True)
+
+    timestamp = models.DateTimeField(auto_now_add=True, null=True)
 
     latitude = models.FloatField()
     longitude = models.FloatField()
