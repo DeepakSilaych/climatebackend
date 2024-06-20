@@ -19,7 +19,8 @@ class StoreData(APIView):
         latitude = data.get('latitude')
         longitude = data.get('longitude')
         location = data.get('location')
-        waterlevel = data.get('waterlevel')
+        feet = data.get('feet')
+        inch = data.get('inch')
         feedback = data.get('feedback')
 
         print(data)
@@ -28,7 +29,7 @@ class StoreData(APIView):
             if location is not None:
                 try:
                     lat, long = geolocate_text(location)
-                    CSFormData.objects.create(waterlevel=waterlevel, location=location, latitude=lat, longitude=long, feedback=feedback)
+                    CSFormData.objects.create(feet=feet, inch=inch, location=location, latitude=lat, longitude=long, feedback=feedback)
                     return Response({'message': 'Data stored successfully'})
                 except Exception as e:
                     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -36,7 +37,7 @@ class StoreData(APIView):
                 return Response({'error': 'Invalid location'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
-                CSFormData.objects.create(waterlevel=waterlevel, location=location, latitude=latitude, longitude=longitude, feedback=feedback)
+                CSFormData.objects.create(feet=feet, inch=inch, location=location, latitude=latitude, longitude=longitude, feedback=feedback)
                 return Response({'message': 'Data stored successfully'})
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

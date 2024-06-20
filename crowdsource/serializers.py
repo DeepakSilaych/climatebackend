@@ -4,7 +4,7 @@ from .models import CSFormData
 class CSFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = CSFormData
-        fields = ['waterlevel', 'latitude', 'longitude']
+        fields = ['latitude', 'longitude', 'feet', 'inch']
 
 class FormDataSerializer(serializers.ModelSerializer):
     class Meta:

@@ -19,3 +19,15 @@
 *.pyw
 
 server.sock
+
+awsstations/__pycache__/
+awsstations/migrations/
+
+blogs/__pycache__/
+blogs/migrations/
+
+weatherstations/__pycache__/
+weatherstations/migrations/
+
+crowdsource/__pycache__/
+crowdsource/migrations/
