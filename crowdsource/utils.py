@@ -21,13 +21,15 @@ def cord_to_text(lat, long):
     geolocator = Nominatim(user_agent="cord_to_text")
     location = geolocator.reverse(f"{lat}, {long}")
     if location:
-
-        name = location.raw.get('name', '')
         address = location.raw.get('address', {})
+        name = address.get('road', '')
         neighbourhood = address.get('neighbourhood', '')
 
         if not neighbourhood:
             neighbourhood = address.get('suburb', '')
+        
+        if not name:
+            name = location.raw.get('name', '')
 
         return f'{name}, {neighbourhood}'
     else:
