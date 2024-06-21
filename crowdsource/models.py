@@ -23,5 +23,5 @@ class CSFormData(models.Model):
 #     latitude = models.FloatField()
 #     longitude = models.FloatField()
 #     address = models.CharField()
-    
+
     
