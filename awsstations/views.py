@@ -20,6 +20,13 @@ class TrainStationListView(APIView):
         stations = TrainStation.objects.all()
         serializer = TrainStationSerializer(stations, many=True)
         return Response(serializer.data)
+    
+# class SeasonalStationDataView(APIView):
+#     def get(self, request, station_id):
+#         # after 10 june
+#         stationdata = StationData.objects.filter(station=AWSStation.objects.get(station_id=station_id), timestamp__gte='2021-06-10').order_by('timestamp').values('timestamp', 'rainfall')
+#         seasonaldata = stationdata.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
+#         return Response(seasonaldata)
 
 class StationDetailView(APIView):
     def get(self, request, station_id):
@@ -28,6 +35,7 @@ class StationDetailView(APIView):
 
         now_time = pd.Timestamp.now(tz='Asia/Kolkata')
 
+# -----------------------1
         four_hours_ago = now_time - timedelta(hours=6)
         hrly_data_min = StationData.objects.filter(station=station, timestamp__gte=four_hours_ago).order_by('-timestamp').values('timestamp', 'rainfall')
         hrly_data = hrly_data_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')[:6]
@@ -51,7 +59,7 @@ class StationDetailView(APIView):
 
             index += 1
 
-
+# -----------------------2
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data_in_min = StationData.objects.filter(station=station, timestamp__gte=three_days_ago).order_by('-timestamp').values('timestamp', 'rainfall')
         daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[ :4]
@@ -73,6 +81,11 @@ class StationDetailView(APIView):
             update_daily_data [str(now_time.date() + timedelta(days=0))] = pred_daily_data.day1_rainfall
             update_daily_data [str(now_time.date() + timedelta(days=1))] = pred_daily_data.day2_rainfall
             update_daily_data [str(now_time.date() + timedelta(days=2))] = pred_daily_data.day3_rainfall
+        
+# ---------------------- 3
+        stationdata = StationData.objects.filter(station=AWSStation.objects.get(station_id=station_id), timestamp__gte='2021-06-10').order_by('timestamp').values('timestamp', 'rainfall')
+        seasonaldata = stationdata.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
+
 
 
 
@@ -80,4 +93,5 @@ class StationDetailView(APIView):
             'station': serializer.data,
             'hrly_data': update_hrly_data,
             'daily_data': update_daily_data,
+            'seasonal_data': seasonaldata
         })
