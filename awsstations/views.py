@@ -8,6 +8,8 @@ from django.db.models.functions import TruncDate, TruncHour
 from django.db.models import Sum
 from django.utils.timezone import now, timedelta
 import pandas as pd
+from django.utils.timezone import make_aware
+from datetime import datetime
 
 class StationListView(APIView):
     def get(self, request):
@@ -84,11 +86,15 @@ class StationDetailView(APIView):
         
 # ---------------------- 3
         stationdata = StationData.objects.filter(station=AWSStation.objects.get(station_id=station_id), timestamp__gte='2021-06-10').order_by('timestamp').values('timestamp', 'rainfall')
-        seasonaldata = stationdata.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
-
-
-
-
+        observed_data = stationdata.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
+        # fetch predicted data and map to obvserved data corresponding to date - 1 day  if exists
+        seasonaldata = []
+        for data in observed_data:
+            previous_day = data['date'] - timedelta(days=1)
+            seasonaldata.append({
+                'date': data['date'],
+                'observed': data['total_rainfall'],
+                'predicted': DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first().day1_rainfall if DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).exists() else 0            })
         return Response({
             'station': serializer.data,
             'hrly_data': update_hrly_data,
