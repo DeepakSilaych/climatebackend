@@ -69,7 +69,7 @@ class StationDetailView(APIView):
             ]
 
             # Fetch daily data for the last 4 days
-            three_days_ago = now_time.date() - timedelta(days=4)
+            three_days_ago = now_time.date() - timedelta(days=3)
             daily_data = (
                 StationData.objects
                 .filter(station=station, timestamp__gte=three_days_ago)
