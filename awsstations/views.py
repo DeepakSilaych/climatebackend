@@ -86,11 +86,11 @@ class StationDetailView(APIView):
                 update_daily_data[str(data['date'])] = data['total_rainfall']
 
             for i in [1,2,3]:
-                day = now_time.date() + timedelta(days=i)
+                day = now_time.date().today() 
                 if pred_daily_data.timestamp.date() == day:
-                    update_daily_data[str(day)] = getattr(pred_daily_data, f'day{i+1}_rainfall', 0)
+                    update_daily_data[str(day + timedelta(days=i))] = getattr(pred_daily_data, f'day{i}_rainfall', 0)
                 else:
-                    update_daily_data[str(day)] = getattr(pred_daily_data, f'day{i+1}_rainfall', 0)
+                    update_daily_data[str(day + timedelta(days=i-1))] = getattr(pred_daily_data, f'day{i}_rainfall', 0)
 
             # Fetch seasonal data (observed and predicted)
             stationdata = (
