@@ -67,7 +67,7 @@ class StationDetailView(APIView):
                 }
                 for i in range(24)
             ]
-    
+
             # Fetch daily data for the last 4 days
             three_days_ago = now_time.date() - timedelta(days=4)
             daily_data = (
@@ -85,7 +85,7 @@ class StationDetailView(APIView):
             for i, data in enumerate(daily_data):
                 update_daily_data[str(data['date'])] = data['total_rainfall']
 
-            for i in range(3):
+            for i in [1,2,3]:
                 day = now_time.date() + timedelta(days=i)
                 if pred_daily_data.timestamp.date() == day:
                     update_daily_data[str(day)] = getattr(pred_daily_data, f'day{i+1}_rainfall', 0)
