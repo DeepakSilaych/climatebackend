@@ -6,10 +6,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models.functions import TruncDate, TruncHour
 from django.db.models import Sum
+from rest_framework import status 
 from django.utils.timezone import now, timedelta
 import pandas as pd
 from django.utils.timezone import make_aware
 from datetime import datetime
+from django.utils import timezone
+
 
 class StationListView(APIView):
     def get(self, request):
@@ -32,72 +35,99 @@ class TrainStationListView(APIView):
 
 class StationDetailView(APIView):
     def get(self, request, station_id):
-        station = AWSStation.objects.get(station_id=station_id)
-        serializer = AWSStationSerializer(station)
+        try:
+            now_time = timezone.now()
 
-        now_time = pd.Timestamp.now(tz='Asia/Kolkata')
+            # Fetch station and serialize it
+            station = AWSStation.objects.get(station_id=station_id)
+            serializer = AWSStationSerializer(station).data
 
-# -----------------------1
-        four_hours_ago = now_time - timedelta(hours=6)
-        hrly_data_min = StationData.objects.filter(station=station, timestamp__gte=four_hours_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        hrly_data = hrly_data_min.annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')[:6]
-        hrly_data = list(hrly_data)
+            # Fetch hourly data for the last 6 hours and pred for next 24 hours
+            four_hours_ago = now_time - timedelta(hours=6)
+            pred_hrly_data = HourlyPrediction.objects.filter(station=station).latest('timestamp')
+            hrly_data = (
+                StationData.objects
+                .filter(station=station, timestamp__gte=four_hours_ago)
+                .annotate(hour=TruncHour('timestamp'))
+                .values('hour')
+                .annotate(total_rainfall=Sum('rainfall'))
+                .order_by('hour')[:6]
+            )
 
-        pred_hrly = HourlyPrediction.objects.filter(station=station).latest('timestamp')
-        update_hrly_data = []
+            update_hrly_data = [
+                {
+                    'hour': (now_time - timedelta(hours=(6 - i))).strftime('%H:00'),
+                    'total_rainfall': data['total_rainfall']
+                }
+                for i, data in enumerate(hrly_data)
+            ] + [
+                {
+                    'hour': (now_time + timedelta(hours=i)).strftime('%H:00'),
+                    'total_rainfall': pred_hrly_data.hr_24_rainfall.get(str(i), 0)
+                }
+                for i in range(24)
+            ]
+    
+            # Fetch daily data for the last 4 days
+            three_days_ago = now_time.date() - timedelta(days=4)
+            daily_data = (
+                StationData.objects
+                .filter(station=station, timestamp__gte=three_days_ago)
+                .annotate(date=TruncDate('timestamp'))
+                .values('date')
+                .annotate(total_rainfall=Sum('rainfall'))
+                .order_by('date')[:4]
+            )
 
-        for i in range(len(hrly_data)):
-            update_hrly_data.append({
-                'hour': str((now_time.hour - 6 + i)%24)+":00",
-                'total_rainfall': hrly_data[i]['total_rainfall']
+            pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
+            update_daily_data = {}
+
+            for i, data in enumerate(daily_data):
+                update_daily_data[str(data['date'])] = data['total_rainfall']
+
+            for i in range(3):
+                day = now_time.date() + timedelta(days=i)
+                if pred_daily_data.timestamp.date() == day:
+                    update_daily_data[str(day)] = getattr(pred_daily_data, f'day{i+1}_rainfall', 0)
+                else:
+                    update_daily_data[str(day)] = getattr(pred_daily_data, f'day{i+1}_rainfall', 0)
+
+            # Fetch seasonal data (observed and predicted)
+            stationdata = (
+                StationData.objects
+                .filter(station=station, timestamp__gte='2021-06-10')
+                .annotate(date=TruncDate('timestamp'))
+                .values('date')
+                .annotate(total_rainfall=Sum('rainfall'))
+                .order_by('date')
+            )
+
+            seasonaldata = []
+            for data in stationdata:
+                previous_day = data['date'] - timedelta(days=1)
+                predicted_rainfall = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
+                predicted_value = predicted_rainfall.day1_rainfall if predicted_rainfall else 0
+                seasonaldata.append({
+                    'date': data['date'],
+                    'observed': data['total_rainfall'],
+                    'predicted': predicted_value
+                })
+
+            return Response({
+                'station': serializer,
+                'hrly_data': update_hrly_data,
+                'daily_data': update_daily_data,
+                'seasonal_data': seasonaldata
             })
 
-        index = 0
-        for hour, rainfall in pred_hrly.hr_24_rainfall.items():
-            update_hrly_data.append({
-                'hour': str((now_time.hour + index)%24)+":00",
-                'total_rainfall': rainfall  
-            })
+        except AWSStation.DoesNotExist:
+            return Response({'error': 'Station does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
-            index += 1
+        except DaywisePrediction.DoesNotExist:
+            return Response({'error': 'Daywise prediction does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
-# -----------------------2
-        three_days_ago = now_time.date() - timedelta(days=3)
-        daily_data_in_min = StationData.objects.filter(station=station, timestamp__gte=three_days_ago).order_by('-timestamp').values('timestamp', 'rainfall')
-        daily_data = daily_data_in_min.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')[ :4]
-        pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
+        except IndexError as e:
+            return Response({'error': f'Index error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        update_daily_data = {}
-        if pred_daily_data.timestamp.date() == now_time.date():
-            for i in [1, 2, 3]:
-                update_daily_data[str(daily_data[i]['date'])] = daily_data[i]['total_rainfall']
-
-            update_daily_data [str(now_time.date() + timedelta(days=1))] = pred_daily_data.day1_rainfall
-            update_daily_data [str(now_time.date() + timedelta(days=2))] = pred_daily_data.day2_rainfall
-            update_daily_data [str(now_time.date() + timedelta(days=3))] = pred_daily_data.day3_rainfall
-        
-        else :
-            for i in [0, 1, 2]:
-                update_daily_data[str(daily_data[i]['date'])] = daily_data[i]['total_rainfall']
-        
-            update_daily_data [str(now_time.date() + timedelta(days=0))] = pred_daily_data.day1_rainfall
-            update_daily_data [str(now_time.date() + timedelta(days=1))] = pred_daily_data.day2_rainfall
-            update_daily_data [str(now_time.date() + timedelta(days=2))] = pred_daily_data.day3_rainfall
-        
-# ---------------------- 3
-        stationdata = StationData.objects.filter(station=AWSStation.objects.get(station_id=station_id), timestamp__gte='2021-06-10').order_by('timestamp').values('timestamp', 'rainfall')
-        observed_data = stationdata.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
-        # fetch predicted data and map to obvserved data corresponding to date - 1 day  if exists
-        seasonaldata = []
-        for data in observed_data:
-            previous_day = data['date'] - timedelta(days=1)
-            seasonaldata.append({
-                'date': data['date'],
-                'observed': data['total_rainfall'],
-                'predicted': DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first().day1_rainfall if DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).exists() else 0            })
-        return Response({
-            'station': serializer.data,
-            'hrly_data': update_hrly_data,
-            'daily_data': update_daily_data,
-            'seasonal_data': seasonaldata
-        })
+        except Exception as e:
+            return Response({'error': f'Server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
