@@ -16,7 +16,7 @@ from django.utils import timezone
 
 class StationListView(APIView):
     def get(self, request):
-        stations = AWSStation.objects.all()
+        stations = AWSStation.objects.all().order_by('name')
         serializer = AWSStationSerializer(stations, many=True)
         return Response(serializer.data)
 
@@ -68,15 +68,16 @@ class StationDetailView(APIView):
                 for i in range(24)
             ]
 
+
             # Fetch daily data for the last 4 days
-            three_days_ago = now_time.date() - timedelta(days=3)
+            three_days_ago = now_time.date() - timedelta(days=4)
             daily_data = (
                 StationData.objects
                 .filter(station=station, timestamp__gte=three_days_ago)
                 .annotate(date=TruncDate('timestamp'))
                 .values('date')
                 .annotate(total_rainfall=Sum('rainfall'))
-                .order_by('date')[:4]
+                .order_by('date')[:3]
             )
 
             pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
@@ -91,6 +92,7 @@ class StationDetailView(APIView):
                     update_daily_data[str(day + timedelta(days=i))] = getattr(pred_daily_data, f'day{i}_rainfall', 0)
                 else:
                     update_daily_data[str(day + timedelta(days=i-1))] = getattr(pred_daily_data, f'day{i}_rainfall', 0)
+
 
             # Fetch seasonal data (observed and predicted)
             stationdata = (
