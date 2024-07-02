@@ -77,24 +77,26 @@ class StationDetailView(APIView):
                 .annotate(date=TruncDate('timestamp'))
                 .values('date')
                 .annotate(total_rainfall=Sum('rainfall'))
-                .order_by('date')[:3]
+                .order_by('date')[:4]
             )
-
             pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
-            update_daily_data = {}
 
-            for i, data in enumerate(daily_data):
-                update_daily_data[str(data['date'])] = data['total_rainfall']
+            update_daily_data = [
+                {
+                    'date': str(data['date']) ,
+                    'predicted': DaywisePrediction.objects.filter(station=station, timestamp__date=data['date']-timedelta(days=1)).first().day1_rainfall if DaywisePrediction.objects.filter(station=station, timestamp__date=data['date']-timedelta(days=1)) else 0,
+                    'observed': data['total_rainfall']
+                } for data in (daily_data[:3] if pred_daily_data.timestamp.date() != now_time.date() else daily_data[1:])
+            ] + [
+                {
+                    'date': (now_time.date() + timedelta(days=i)).strftime('%Y-%m-%d') if pred_daily_data.timestamp.date() == now_time.date() else (now_time.date() + timedelta(days=i-1)).strftime('%Y-%m-%d'),
+                    'predicted': getattr(pred_daily_data, f'day{i}_rainfall', 0),
+                    'observed': 0
 
-            for i in [1,2,3]:
-                day = now_time.date().today() 
-                if pred_daily_data.timestamp.date() == day:
-                    update_daily_data[str(day + timedelta(days=i))] = getattr(pred_daily_data, f'day{i}_rainfall', 0)
-                else:
-                    update_daily_data[str(day + timedelta(days=i-1))] = getattr(pred_daily_data, f'day{i}_rainfall', 0)
+                } for i in [1,2,3]
+            ]
 
-
-            # Fetch seasonal data (observed and predicted)
+            # Fetch seasonal data
             stationdata = (
                 StationData.objects
                 .filter(station=station, timestamp__gte='2021-06-10')
