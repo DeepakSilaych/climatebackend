@@ -98,8 +98,13 @@ class StationDetailView(APIView):
             ]
 
             mobile_daily_data = {}
-            for data in daily_data:
-                mobile_daily_data[ str(data['date']) ] = data['total_rainfall']
+            if pred_daily_data.timestamp.date() == now_time.date():
+                for data in daily_data[1:]:
+                    mobile_daily_data[str(data['date'])] = data['total_rainfall']
+            else :
+                for data in daily_data[:3]:
+                    mobile_daily_data[str(data['date'])] = data['total_rainfall']
+                mobile_daily_data[str(now_time.date())] = 0
             
             if pred_daily_data.timestamp.date() == now_time.date():
                 mobile_daily_data[(now_time.date() + timedelta(days=1)).strftime('%Y-%m-%d')] = pred_daily_data.day1_rainfall
