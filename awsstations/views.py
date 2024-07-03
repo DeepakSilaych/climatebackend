@@ -69,6 +69,7 @@ class StationDetailView(APIView):
             ]
 
 
+
             # Fetch daily data for the last 4 days
             three_days_ago = now_time.date() - timedelta(days=4)
             daily_data = (
@@ -96,6 +97,21 @@ class StationDetailView(APIView):
                 } for i in [1,2,3]
             ]
 
+            mobile_daily_data = {}
+            for data in daily_data:
+                mobile_daily_data[ str(data['date']) ] = data['total_rainfall']
+            
+            if pred_daily_data.timestamp.date() == now_time.date():
+                mobile_daily_data[(now_time.date() + timedelta(days=1)).strftime('%Y-%m-%d')] = pred_daily_data.day1_rainfall
+                mobile_daily_data[(now_time.date() + timedelta(days=2)).strftime('%Y-%m-%d')] = pred_daily_data.day2_rainfall
+                mobile_daily_data[(now_time.date() + timedelta(days=3)).strftime('%Y-%m-%d')] = pred_daily_data.day3_rainfall
+            else:
+                mobile_daily_data[now_time.date().strftime('%Y-%m-%d')] = 0
+                mobile_daily_data[(now_time.date() + timedelta(days=0)).strftime('%Y-%m-%d')] = pred_daily_data.day1_rainfall
+                mobile_daily_data[(now_time.date() + timedelta(days=1)).strftime('%Y-%m-%d')] = pred_daily_data.day2_rainfall
+                mobile_daily_data[(now_time.date() + timedelta(days=2)).strftime('%Y-%m-%d')] = pred_daily_data.day3_rainfall
+
+
             # Fetch seasonal data
             stationdata = (
                 StationData.objects
@@ -121,7 +137,8 @@ class StationDetailView(APIView):
                 'station': serializer,
                 'hrly_data': update_hrly_data,
                 'daily_data': update_daily_data,
-                'seasonal_data': seasonaldata
+                'seasonal_data': seasonaldata,
+                'mobile_daily_data': mobile_daily_data
             })
 
         except AWSStation.DoesNotExist:
