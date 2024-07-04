@@ -7,7 +7,6 @@ from crowdsource.serializers import *
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-# Create your api to access database for each model
 
 class AWSStationListView(APIView):
     def get(self, request):
@@ -28,7 +27,7 @@ class StationDataListView(APIView):
         return Response({'status': 'success'})
     
     def get(self, request):
-        station = request.GET.get('station', None)
+        station = AWSStation.objects.get(station_id=request.query_params.get('station', None))
         if station is not None:
             stationdata = StationData.objects.filter(station=station).order_by('-timestamp')[:100]
         else:
@@ -44,15 +43,30 @@ class DaywisePredictionListView(APIView):
             day2_rainfall=request.data['day2'],
             day3_rainfall=request.data['day3']
         )
-
         return Response({'status': 'success'})
 
 class HourlyPredictionListView(APIView):
     def post(self, request):
+        print(request.data)
         HourlyPrediction.objects.create(
             station=AWSStation.objects.get(station_id=request.data['station']),
-            hr_24_rainfall=request.data['hr_24_rainfall']
+            hr_24_rainfall=request.data.getlist('hr_24_rainfall')
         )
+
+        return Response({'status': 'success'})
+    
+class SaveTweet(APIView):
+    def post(self, request):
+        Tweets.objects.create(
+            tweet_text=request.data['tweet'],
+            timestamp=request.data['timestamp'],
+            sentiment=request.data['sentiment'] == 'POSITIVE',
+            latitude=request.data['latitude'],
+            longitude=request.data['longitude'],
+            address=request.data['location']
+        )
+
+        return Response({'status': 'success'})
 
         
 class updateTrainStation(APIView):

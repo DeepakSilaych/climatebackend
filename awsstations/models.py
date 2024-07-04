@@ -43,7 +43,7 @@ class HourlyPrediction(models.Model):
     hr_24_rainfall = models.JSONField(default=dict)
 
     def __str__(self):
-        return self.station.name + " " + str(self.timestamp)
+        return self.station.name + " " + str(self.timestamp.strftime('%H:%M'))
     
 
 class TrainStation(models.Model):

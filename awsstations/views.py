@@ -57,8 +57,8 @@ class StationDetailView(APIView):
             ] + [
                 {
                     'hour': (now_time + timedelta(hours=i)).strftime('%H:00'),
-                    'total_rainfall': pred_hrly_data.hr_24_rainfall.get(str(i), 0)
-                }
+                    'total_rainfall': float(pred_hrly_data.hr_24_rainfall[i])
+                }   
                 for i in range(24)
             ]
 

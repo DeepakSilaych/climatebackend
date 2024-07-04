@@ -19,12 +19,12 @@ class CSFormData(models.Model):
         return self.location + " " + str(self.feet) + "ft " + str(self.inch) + "in"
 # tweet data model
 
-# class Tweet(models.Model):
-#     tweet_text = models.CharField(max_length=200)
-#     timestamp = models.DateTimeField()
-#     sentiment = models.BooleanField()
-#     latitude = models.FloatField()
-#     longitude = models.FloatField()
-#     address = models.CharField()
+class Tweets(models.Model):
+    tweet_text = models.TextField()
+    timestamp = models.DateTimeField()
+    sentiment = models.BooleanField() # True for positive, False for negative
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
+    address = models.CharField(null=True, max_length=200)
 
     
