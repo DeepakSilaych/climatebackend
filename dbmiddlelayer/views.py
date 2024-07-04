@@ -23,6 +23,15 @@ class StationDataListView(APIView):
             return Response(serializer.data)
         else:
             return Response(serializer.errors)
+    
+    def get(self, request):
+        station = request.GET.get('station', None)
+        if station is not None:
+            stationdata = StationData.objects.filter(station=station).order_by('-timestamp')[:100]
+        else:
+            stationdata = StationData.objects.all().order_by('-timestamp')[:100]
+        serializer = StationDataSerializer(stationdata, many=True)
+        return Response(serializer.data)
 
 class DaywisePredictionListView(APIView):
     def post(self, request):

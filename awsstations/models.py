@@ -19,7 +19,7 @@ class StationData(models.Model):
     temperature = models.FloatField(default=0)
     humidity = models.FloatField(default=0)
     wind_speed = models.FloatField(default=0)
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(auto_now_add=True, null=True)
     
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
