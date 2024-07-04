@@ -26,12 +26,6 @@ class TrainStationListView(APIView):
         serializer = TrainStationSerializer(stations, many=True)
         return Response(serializer.data)
     
-# class SeasonalStationDataView(APIView):
-#     def get(self, request, station_id):
-#         # after 10 june
-#         stationdata = StationData.objects.filter(station=AWSStation.objects.get(station_id=station_id), timestamp__gte='2021-06-10').order_by('timestamp').values('timestamp', 'rainfall')
-#         seasonaldata = stationdata.annotate(date=TruncDate('timestamp')).values('date').annotate(total_rainfall=Sum('rainfall')).order_by('date')
-#         return Response(seasonaldata)
 
 class StationDetailView(APIView):
     def get(self, request, station_id):

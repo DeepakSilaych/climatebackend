@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'awsstations',
     'crowdsource',
     'blogs',
+    'dbmiddlelayer',
     
     'rest_framework',
     'django_celery_beat',
