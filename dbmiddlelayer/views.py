@@ -17,12 +17,15 @@ class AWSStationListView(APIView):
     
 class StationDataListView(APIView):
     def post(self, request):
-        serializer = StationDataSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
+        print(request.data)
+        StationData.objects.create(
+            station=AWSStation.objects.get(station_id=request.data['station']), 
+            rainfall=request.data['rainfall'], 
+            temperature=request.data['temperature'], 
+            humidity=request.data['humidity'], 
+            wind_speed=request.data['wind_speed']
+        )
+        return Response({'status': 'success'})
     
     def get(self, request):
         station = request.GET.get('station', None)
@@ -35,21 +38,21 @@ class StationDataListView(APIView):
 
 class DaywisePredictionListView(APIView):
     def post(self, request):
-        serializer = DaywisePredictionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
+        DaywisePrediction.objects.create(
+            station=AWSStation.objects.get(station_id=request.data['station']),
+            day1_rainfall=request.data['day1'],
+            day2_rainfall=request.data['day2'],
+            day3_rainfall=request.data['day3']
+        )
+
+        return Response({'status': 'success'})
 
 class HourlyPredictionListView(APIView):
     def post(self, request):
-        serializer = HourlyPredictionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
+        HourlyPrediction.objects.create(
+            station=AWSStation.objects.get(station_id=request.data['station']),
+            hr_24_rainfall=request.data['hr_24_rainfall']
+        )
 
         
 class updateTrainStation(APIView):
