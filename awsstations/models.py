@@ -6,8 +6,6 @@ class AWSStation(models.Model):
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     rainfall = models.FloatField(default=0)
-    curr_temp = models.FloatField(default=0)
-    curr_windspeed = models.FloatField(default=0)
 
     def __str__(self):
         return self.name
@@ -16,10 +14,7 @@ class AWSStation(models.Model):
 class StationData(models.Model):
     station = models.ForeignKey(AWSStation, on_delete=models.CASCADE)
     rainfall = models.FloatField(default=0)
-    temperature = models.FloatField(default=0)
-    humidity = models.FloatField(default=0)
-    wind_speed = models.FloatField(default=0)
-    timestamp = models.DateTimeField(auto_now_add=True, null=True)
+    timestamp = models.DateTimeField(null=True)
     
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)
@@ -43,7 +38,7 @@ class HourlyPrediction(models.Model):
     hr_24_rainfall = models.JSONField(default=dict)
 
     def __str__(self):
-        return self.station.name + " " + str(self.timestamp.strftime('%H:%M'))
+        return self.station.name + " " + str(self.timestamp.strftime('%Y-%m-%d %H:%M:%S'))
     
 
 class TrainStation(models.Model):
@@ -56,15 +51,4 @@ class TrainStation(models.Model):
 
     def __str__(self):
         return self.station_name
-    def update(self):
-        last_data = StationData.objects.filter(station=self.neareststation).order_by('-timestamp')[:4]
-        if last_data:
-            max_rainfall = max(data.rainfall for data in last_data)
-            if max_rainfall > 20:
-                self.WarningLevel = 3
-            elif max_rainfall > 15:
-                self.WarningLevel = 2
-            elif max_rainfall > 10:
-                self.WarningLevel = 1
-            else:
-                self.WarningLevel = 0
+    
