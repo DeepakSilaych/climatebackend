@@ -19,10 +19,7 @@ class StationDataListView(APIView):
         print(request.data)
         StationData.objects.create(
             station=AWSStation.objects.get(station_id=request.data['station']), 
-            rainfall=request.data['rainfall'], 
-            temperature=request.data['temperature'], 
-            humidity=request.data['humidity'], 
-            wind_speed=request.data['wind_speed']
+            rainfall=request.data['rainfall']
         )
         return Response({'status': 'success'})
     
