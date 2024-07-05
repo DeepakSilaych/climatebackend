@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CSFormData
+from .models import CSFormData, Tweets
 
 class CSFormSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,4 +9,9 @@ class CSFormSerializer(serializers.ModelSerializer):
 class FormDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = CSFormData
+        fields = '__all__'
+
+class TweetsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tweets
         fields = '__all__'

@@ -2,8 +2,8 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import CSFormData
-from .serializers import CSFormSerializer, FormDataSerializer
+from .models import CSFormData, Tweets
+from .serializers import CSFormSerializer, FormDataSerializer, TweetsSerializer
 
 from .utils import geolocate_text, cord_to_text
 
@@ -61,3 +61,10 @@ class GetLocation(APIView):
             return Response({'location': location})
         else:
             return Response({'error': 'Invalid coordinates'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class Tweet(APIView):
+    def get(self, request):
+        tweets = Tweets.objects.all()
+        serializer = TweetsSerializer(tweets, many=True)
+        return Response(serializer.data)
