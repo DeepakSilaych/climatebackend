@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class AWSStation(models.Model):
     station_id = models.IntegerField()
@@ -14,7 +15,7 @@ class AWSStation(models.Model):
 class StationData(models.Model):
     station = models.ForeignKey(AWSStation, on_delete=models.CASCADE)
     rainfall = models.FloatField(default=0)
-    timestamp = models.DateTimeField(null=True)
+    timestamp = models.DateTimeField(auto_now_add=True, null=True)
     
     def __str__(self):
         return self.station.name + " " + str(self.timestamp)

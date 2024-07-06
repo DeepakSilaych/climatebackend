@@ -65,16 +65,19 @@ class StationDetailView(APIView):
 
 
             # Fetch daily data for the last 4 days
-            three_days_ago = now_time.date() - timedelta(days=4)
+            three_days_ago = now_time.date() - timedelta(days=3)
             daily_data = (
                 StationData.objects
                 .filter(station=station, timestamp__gte=three_days_ago)
                 .annotate(date=TruncDate('timestamp'))
                 .values('date')
                 .annotate(total_rainfall=Sum('rainfall'))
-                .order_by('date')[:4]
+                .order_by('date')
             )
-            pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp')
+
+            print(daily_data)
+            
+            pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp') 
 
             update_daily_data = [
                 {
