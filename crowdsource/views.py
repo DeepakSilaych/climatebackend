@@ -57,16 +57,7 @@ class GetLocation(APIView):
         if location:
             return Response({'location': location})
         else:
-            return Response({'error': 'Invalid coordinates'}, status=status.HTTP_400_BAD_REQUEST)
-        
-
-class Tweet(APIView):
-    def get(self, request):
-        tweets = Tweets.objects.all().order_by('-timestamp')
-        serializer = TweetsSerializer(tweets, many=True)
-        return Response(serializer.data)
-    
-
+            return Response({'error': 'Invalid coordinates'}, status=status.HTTP_400_BAD_REQUEST) 
 
 class FetchSensorList(APIView):
     def get(self, request):
@@ -129,4 +120,10 @@ class TweetMap(APIView):
     def get(self, request):
         tweets = Tweets.objects.all()
         serializer = TweetsMapSerializer(tweets, many=True)
+        return Response(serializer.data)
+
+class Tweet(APIView):
+    def get(self, request):
+        tweets = Tweets.objects.all().order_by('-timestamp')
+        serializer = TweetsSerializer(tweets, many=True)
         return Response(serializer.data)
