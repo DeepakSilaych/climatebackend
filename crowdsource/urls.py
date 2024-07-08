@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import StoreData, GetData, GetLocation, FetchSensorList, FetchWaterLevelData, TweetMap, Tweet
+from .views import StoreData, GetData, GetLocation, TweetMap, Tweet
 
 urlpatterns = [
     path('data/', StoreData.as_view(), name='store_data'),

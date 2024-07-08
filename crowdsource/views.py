@@ -11,8 +11,6 @@ from django.utils import timezone
 from datetime import timedelta
 import requests
 import time
-from .utils import thing_data, things_list
-
 
 class StoreData(APIView):
     def post(self, request):
