@@ -12,9 +12,18 @@ class FormDataSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TweetsMapSerializer(serializers.ModelSerializer):
+    # only address != "" values
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data['address'] == "":
+            return None
+        return data
+    
     class Meta:
         model = Tweets
-        fields = '__all__'
+        fields = ['tweet_text', 'sentiment', 'latitude', 'longitude', 'address']
+
 
 class TweetsSerializer(serializers.ModelSerializer):
     class Meta:

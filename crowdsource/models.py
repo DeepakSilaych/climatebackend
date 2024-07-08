@@ -27,4 +27,7 @@ class Tweets(models.Model):
     longitude = models.FloatField(null=True)
     address = models.CharField(null=True, max_length=200)
 
+    def __str__(self) -> str:
+        return self.tweet_text + str(self.timestamp)
+
     

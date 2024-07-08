@@ -119,7 +119,7 @@ class FetchWaterLevelData(APIView):
 class TweetMap(APIView):
     def get(self, request):
         # fetch tweet with non-zero latitude and longitude values, is null isnt correct parameter in last 24 hours
-        tweets = Tweets.objects.filter(latitude__isnull=False, longitude__isnull=False, timestamp__gte=timezone.now()-timedelta(days=1))
+        tweets = Tweets.objects.filter(timestamp__gte=timezone.now()-timedelta(days=1)).exclude(latitude=0).exclude(longitude=0)
         serializer = TweetsMapSerializer(tweets, many=True)
         return Response(serializer.data)
 
