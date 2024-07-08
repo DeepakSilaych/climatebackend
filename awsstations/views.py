@@ -70,7 +70,7 @@ class StationDetailView(APIView):
             .reverse()[:4]
         )
 
-        pred_daily_data = DaywisePrediction.objects.filter(station=station).latest('timestamp') 
+        pred_daily_data = DaywisePrediction.objects.filter(station=station, timestamp__isnull=False).latest('timestamp')
 
         print(pred_daily_data, "----------------------------------------------------------------------")
 
@@ -90,6 +90,7 @@ class StationDetailView(APIView):
 
                 } for i in [1,2,3]
             ]
+
         except Exception as e:
             print(e)
             update_daily_data = []

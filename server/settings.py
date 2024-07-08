@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'django_celery_beat',
-
 ]
 
 MIDDLEWARE = [
@@ -73,7 +72,6 @@ TEMPLATES = [
         },
     },
 ]
-
 
 
 WSGI_APPLICATION = 'server.wsgi.application'
