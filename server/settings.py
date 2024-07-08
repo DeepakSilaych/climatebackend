@@ -17,8 +17,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
     'http://192.168.0.114:8000',
-    'http://194.238.18.228'
-    'https://194.238.18.228'
+    'http://194.238.18.228',
+    'https://194.238.18.228',
+    'https://www.mumbaiflood.in',
+    'https://mumbaiflood.in',
+    'http://mumbaiflood.in',
+    'http://www.mumbaiflood.in',
 ]
 
 INSTALLED_APPS = [
