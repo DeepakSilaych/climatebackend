@@ -118,7 +118,7 @@ class FetchWaterLevelData(APIView):
 
 class TweetMap(APIView):
     def get(self, request):
-        tweets = Tweets.objects.all()
+        tweets = Tweets.objects.filter(latitude__isnull=False, longitude__isnull=False)
         serializer = TweetsMapSerializer(tweets, many=True)
         return Response(serializer.data)
 
