@@ -22,7 +22,7 @@ class TweetsMapSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Tweets
-        fields = ['tweet_text', 'sentiment', 'latitude', 'longitude', 'address']
+        fields = ['tweet_text', 'sentiment', 'latitude', 'longitude', 'address', 'timestamp']
 
 
 class TweetsSerializer(serializers.ModelSerializer):
