@@ -4,6 +4,7 @@ from awsstations.serializers import *
 from crowdsource.models import *
 from crowdsource.serializers import *
 
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import JsonResponse
@@ -87,7 +88,7 @@ class updateTrainStation(APIView):
                     station.WarningLevel = 0
             station.save()
         return Response({'status': 'success'})
-
+    
 
 def health_check(request):
     try:
@@ -97,3 +98,4 @@ def health_check(request):
         return JsonResponse({'status': 'ok'})
     except OperationalError as e:   
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    

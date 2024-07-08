@@ -1,0 +1,96 @@
+<!-- monitor/templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs and Status</title>
+    <style>
+
+        /* Your custom styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f7fafc;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .backend {
+            margin-bottom: 24px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 24px;
+            color: #a0aec0;
+        }
+
+        a{
+            color: #a0aec0;
+            text-decoration: none;
+        }
+
+        a:hover{
+            color: #a0aec0
+        }
+
+        a:visited{
+            color: #a0aec0
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>System Monitor</h1>
+
+        <div class="backend">
+            <h2>Backend Status</h2>
+            <p>Status: {{ backend_status }}</p>
+            <p>Last Checked: {{ backend_last_checked }}</p>
+            {% if backend_last_status_change_to_up %}
+            <p>Last Status Change to Up: {{ backend_last_status_change_to_up }}</p>
+            {% endif %}
+        </div>
+
+        <div class="automations">
+            <h2>Automations</h2>
+            <ul>
+                {% for automation in automations %}
+                <li>{{ automation.automation_name }} - {{ automation.automation_status }} - Last Run: {{ automation.automation_last_run }} - Next Run: {{ automation.automation_next_run }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="logs">
+            <h2>Logs</h2>
+            <ul>
+                {% for log in logs %}
+                <li>{{ log.log_text }} - {{ log.timestamp }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+    <footer>
+        <p>Mumbai Flood System Monitor. All credits reserved @ Climate Studies IITB 2024 </p>
+        <p> Developed by <a href="https://github.com/DeepakSilaych">Deepak Silaych</a> </p>
+    </footer>
+</body>
+</html>

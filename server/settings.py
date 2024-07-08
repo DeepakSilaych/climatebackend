@@ -2,7 +2,6 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-from celery.schedules import crontab
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  
@@ -60,7 +59,7 @@ ROOT_URLCONF = 'server.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

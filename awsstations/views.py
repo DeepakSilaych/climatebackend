@@ -37,7 +37,7 @@ class StationDetailView(APIView):
 
         # Fetch hourly data for the last 6 hours and pred for next 24 hours
         pred_hrly_data = HourlyPrediction.objects.filter(station=station).latest('timestamp')
-        hrly_data = StationData.objects.filter(station=station).annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour').reverse()[:6]
+        hrly_data = StationData.objects.filter(station=station).annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour').reverse()[:24]
 
         # print(hrly_data)
     
@@ -48,12 +48,12 @@ class StationDetailView(APIView):
                 'total_rainfall': data['total_rainfall']
             }
             for i, data in enumerate(hrly_data)
-        ] + [
-            {
-                'hour': (now_time + timedelta(hours=i)).strftime('%H:00'),
-                'total_rainfall': float(pred_hrly_data.hr_24_rainfall[i])
-            }   
-            for i in range(24)
+        # ] + [
+        #     {
+        #         'hour': (now_time + timedelta(hours=i)).strftime('%H:00'),
+        #         'total_rainfall': float(pred_hrly_data.hr_24_rainfall[i])
+        #     }   
+        #     for i in range(24)
         ]
 
         # print(update_hrly_data)
@@ -62,12 +62,11 @@ class StationDetailView(APIView):
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data = (
             StationData.objects
-            .filter(station=station)
+            .filter(station=station, timestamp__gte=three_days_ago)
             .annotate(date=TruncDate('timestamp'))
             .values('date')
             .annotate(total_rainfall=Sum('rainfall'))
-            .order_by('date')
-            .reverse()[:4]
+            .order_by('date')[:4]
         )
 
         pred_daily_data = DaywisePrediction.objects.filter(station=station, timestamp__isnull=False).latest('timestamp')
