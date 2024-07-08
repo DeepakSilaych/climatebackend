@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import CSFormData, Tweets
-from .serializers import CSFormSerializer, FormDataSerializer, TweetsSerializer
+from .serializers import CSFormSerializer, FormDataSerializer, TweetsSerializer, TweetsMapSerializer
 
 from .utils import geolocate_text, cord_to_text
 
@@ -42,9 +42,6 @@ class StoreData(APIView):
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
-
 class GetData(APIView):
     def get(self, request):
         # last 24 hrs data
@@ -65,7 +62,7 @@ class GetLocation(APIView):
 
 class Tweet(APIView):
     def get(self, request):
-        tweets = Tweets.objects.all()
+        tweets = Tweets.objects.all().order_by('-timestamp')
         serializer = TweetsSerializer(tweets, many=True)
         return Response(serializer.data)
     
@@ -127,3 +124,9 @@ class FetchWaterLevelData(APIView):
             return Response(response.json(), status=status.HTTP_200_OK)
         except requests.RequestException as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class TweetMap(APIView):
+    def get(self, request):
+        tweets = Tweets.objects.all()
+        serializer = TweetsMapSerializer(tweets, many=True)
+        return Response(serializer.data)

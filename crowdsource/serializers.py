@@ -11,7 +11,12 @@ class FormDataSerializer(serializers.ModelSerializer):
         model = CSFormData
         fields = '__all__'
 
-class TweetsSerializer(serializers.ModelSerializer):
+class TweetsMapSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tweets
         fields = '__all__'
+
+class TweetsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tweets
+        fields = ['tweet', 'Sentiment', 'timestamp']
