@@ -8,7 +8,5 @@ urlpatterns = [
 
     path('tweetmap/', TweetMap.as_view(), name='tweetmap'),
     path('tweet/', Tweet.as_view(), name='tweet'),
-
-    path('sensorlist/', FetchSensorList.as_view(), name='fetchsensorlist'),
-    path('waterleveldata/<int:thing_id>/', FetchWaterLevelData.as_view(), name='fetchwaterleveldata'),
 ]
+     
