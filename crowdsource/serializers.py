@@ -19,4 +19,4 @@ class TweetsMapSerializer(serializers.ModelSerializer):
 class TweetsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tweets
-        fields = ['tweet_text', 'Sentiment', 'timestamp']
+        fields = ['tweet_text', 'sentiment', 'timestamp']
