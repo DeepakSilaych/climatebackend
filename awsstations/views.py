@@ -37,14 +37,14 @@ class StationDetailView(APIView):
 
         # Fetch hourly data for the last 6 hours and pred for next 24 hours
         pred_hrly_data = HourlyPrediction.objects.filter(station=station).latest('timestamp')
-        hrly_data = StationData.objects.filter(station=station).annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour').reverse()[:24]
+        hrly_data = StationData.objects.filter(station=station).annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')[:24]
 
-        # print(hrly_data)
+        print(hrly_data)
     
 
         update_hrly_data = [
             {
-                'hour': (now_time - timedelta(hours=(6 - i))).strftime('%H:00'),
+                'hour': (now_time - timedelta(hours=24-i) + timedelta(hours=5.5)).strftime('%H:00'),
                 'total_rainfall': data['total_rainfall']
             }
             for i, data in enumerate(hrly_data)
