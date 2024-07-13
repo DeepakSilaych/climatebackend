@@ -59,7 +59,7 @@ class StationDetailView(APIView):
         # print(update_hrly_data)
 
         # Fetch daily data for the last 4 days
-        three_days_ago = now_time.date() - timedelta(days=3)
+        three_days_ago = now_time.date() - timedelta(days=2)
         daily_data = (
             StationData.objects
             .filter(station=station, timestamp__gte=three_days_ago)
@@ -71,7 +71,7 @@ class StationDetailView(APIView):
 
         pred_daily_data = DaywisePrediction.objects.filter(station=station, timestamp__isnull=False).latest('timestamp')
 
-        print(pred_daily_data, "----------------------------------------------------------------------")
+        print(daily_data, "----------------------------------------------------------------------")
 
 
         try :
