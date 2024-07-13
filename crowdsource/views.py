@@ -15,6 +15,7 @@ import time
 class StoreData(APIView):
     def post(self, request):
         data = request.data
+        name = data.get('name')
         latitude = data.get('latitude')
         longitude = data.get('longitude')
         location = data.get('location')
@@ -36,7 +37,7 @@ class StoreData(APIView):
                 return Response({'error': 'Invalid location'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
-                CSFormData.objects.create(feet=feet, inch=inch, location=location, latitude=latitude, longitude=longitude, feedback=feedback)
+                CSFormData.objects.create(name=name, feet=feet, inch=inch, location=location, latitude=latitude, longitude=longitude, feedback=feedback)
                 return Response({'message': 'Data stored successfully'})
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

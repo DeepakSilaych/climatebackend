@@ -3,7 +3,7 @@ from django.db import models
 
 # form data model
 class CSFormData(models.Model):
-    
+    name = models.CharField(max_length=100, null=True)
     location = models.TextField(blank=True, null=True)
     feedback = models.TextField(blank=True, null=True)
 
