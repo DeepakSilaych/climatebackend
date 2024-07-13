@@ -3,6 +3,7 @@ from awsstations.models import *
 from awsstations.serializers import *
 from crowdsource.models import *
 from crowdsource.serializers import *
+from .models import *
 
 
 from rest_framework.views import APIView
@@ -10,6 +11,8 @@ from rest_framework.response import Response
 from django.http import JsonResponse
 from django.db import connection
 from django.db.utils import OperationalError
+from django.utils import timezone
+from datetime import timedelta
 
 
 class AWSStationListView(APIView):
@@ -73,20 +76,22 @@ class SaveTweet(APIView):
 class updateTrainStation(APIView):
     def get(self, request):
         for station in TrainStation.objects.all():
-            stationdata = StationData.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
+            AWSDataForquater.objects.filter(station=station.neareststation, timestamp__gte=timezone.now() - timedelta(days=2)).delete()
+            stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
             if len(stationdata) == 4:
                 rainfall = 0
                 for data in stationdata:
                     rainfall += data.rainfall
-                if rainfall > 100:
+                if rainfall > 10:
                     station.WarningLevel = 3
-                elif rainfall > 50:
+                elif rainfall > 5:
                     station.WarningLevel = 2
-                elif rainfall > 25:
+                elif rainfall > 2.5:
                     station.WarningLevel = 1
                 else:
                     station.WarningLevel = 0
             station.save()
+
         return Response({'status': 'success'})
     
 
