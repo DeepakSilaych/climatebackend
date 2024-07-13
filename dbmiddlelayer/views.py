@@ -39,6 +39,14 @@ class StationDataListView(APIView):
         serializer = StationDataSerializer(stationdata, many=True)
         return Response(serializer.data)
 
+class AWSDataForquaterListView(APIView):
+    def post(self, request):
+        AWSDataForquater.objects.create(
+            station=AWSStation.objects.get(station_id=request.data['station']),
+            rainfall=request.data['rainfall']
+        )
+        return Response({'status': 'success'})
+
 class DaywisePredictionListView(APIView):
     def post(self, request):
         DaywisePrediction.objects.create(
@@ -56,7 +64,6 @@ class HourlyPredictionListView(APIView):
             station=AWSStation.objects.get(station_id=request.data['station']),
             hr_24_rainfall=request.data.getlist('hr_24_rainfall')
         )
-
         return Response({'status': 'success'})
     
 class SaveTweet(APIView):
