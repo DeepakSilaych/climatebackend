@@ -47,7 +47,7 @@ class StationDetailView(APIView):
                 'hour': data['hour'].strftime('%H:00'),
                 'total_rainfall': data['total_rainfall']
             }
-            for i, data in enumerate(hrly_data)
+            for data in hrly_data
         # ] + [
         #     {
         #         'hour': (now_time + timedelta(hours=i)).strftime('%H:00'),
@@ -142,7 +142,7 @@ class StationDetailView(APIView):
 
         return Response({
             'station': serializer,
-            'hrly_data': hrly_data,
+            'hrly_data': update_hrly_data,
             'daily_data': update_daily_data,
             'seasonal_data': seasonaldata,
             'mobile_daily_data': mobile_daily_data
