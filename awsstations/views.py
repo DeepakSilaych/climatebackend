@@ -137,15 +137,3 @@ class StationDetailView(APIView):
             'seasonal_data': seasonaldata,
             'mobile_daily_data': mobile_daily_data
         })
-
-        # except AWSStation.DoesNotExist:
-        #     return Response({'error': 'Station does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-        # except DaywisePrediction.DoesNotExist:
-        #     return Response({'error': 'Daywise prediction does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-        # except IndexError as e:
-        #     return Response({'error': f'Index error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # except Exception as e:
-        #     return Response({'error': f'Server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
