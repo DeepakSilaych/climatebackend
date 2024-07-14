@@ -44,7 +44,7 @@ class StationDetailView(APIView):
 
         update_hrly_data = [
             {
-                'hour': (now_time - timedelta(hours=24-i) + timedelta(hours=5.5)).strftime('%H:00'),
+                'hour': data['hour'].strftime('%H:00'),
                 'total_rainfall': data['total_rainfall']
             }
             for i, data in enumerate(hrly_data)

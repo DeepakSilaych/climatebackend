@@ -41,6 +41,7 @@ class StationDataListView(APIView):
 
 class AWSDataForquaterListView(APIView):
     def post(self, request):
+        print(request.data)
         AWSDataForquater.objects.create(
             station=AWSStation.objects.get(station_id=request.data['station']),
             rainfall=request.data['rainfall']
@@ -76,7 +77,6 @@ class SaveTweet(APIView):
             longitude=request.data['longitude'],
             address=request.data['location']
         )
-
         return Response({'status': 'success'})
 
         
