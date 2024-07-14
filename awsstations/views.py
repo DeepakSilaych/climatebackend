@@ -94,29 +94,19 @@ class StationDetailView(APIView):
             print(e)
             update_daily_data = []
 
-        try: 
-            mobile_daily_data = {}
-            if pred_daily_data :
-                if now_time.date() == pred_daily_data.timestamp.date():
-                    for data in daily_data[1:]:
-                        mobile_daily_data[str(data['date'])] = data['total_rainfall']
-            else :
-                for data in daily_data[:3]:
-                    mobile_daily_data[str(data['date'])] = data['total_rainfall']
-                mobile_daily_data[str(now_time.date())] = 0
+
+        mobile_daily_data = {}
+        try:             
+            for data in daily_data[:3] if pred_daily_data.timestamp.date() != now_time.date() else daily_data[1:]:
+                mobile_daily_data[str(data['date'])] = data['total_rainfall']
             
-            if now_time.date() == pred_daily_data.timestamp.date() if pred_daily_data else False:
-                mobile_daily_data[(now_time.date() + timedelta(days=1)).strftime('%Y-%m-%d')] = pred_daily_data.day1_rainfall
-                mobile_daily_data[(now_time.date() + timedelta(days=2)).strftime('%Y-%m-%d')] = pred_daily_data.day2_rainfall
-                mobile_daily_data[(now_time.date() + timedelta(days=3)).strftime('%Y-%m-%d')] = pred_daily_data.day3_rainfall
-            else:
-                mobile_daily_data[now_time.date().strftime('%Y-%m-%d')] = 0
-                mobile_daily_data[(now_time.date() + timedelta(days=0)).strftime('%Y-%m-%d')] = pred_daily_data.day1_rainfall
-                mobile_daily_data[(now_time.date() + timedelta(days=1)).strftime('%Y-%m-%d')] = pred_daily_data.day2_rainfall
-                mobile_daily_data[(now_time.date() + timedelta(days=2)).strftime('%Y-%m-%d')] = pred_daily_data.day3_rainfall
+            i = 1 if pred_daily_data.timestamp.date() == now_time.date() else 0
+            mobile_daily_data[(now_time.date() + timedelta(days=i)).strftime('%Y-%m-%d')] = pred_daily_data.day1_rainfall
+            mobile_daily_data[(now_time.date() + timedelta(days=i+1)).strftime('%Y-%m-%d')] = pred_daily_data.day2_rainfall
+            mobile_daily_data[(now_time.date() + timedelta(days=i+2)).strftime('%Y-%m-%d')] = pred_daily_data.day3_rainfall
+
         except Exception as e:
             print(e)
-            mobile_daily_data = {}
 
 
         # Fetch seasonal data
