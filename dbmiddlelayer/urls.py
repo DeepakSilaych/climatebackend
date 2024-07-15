@@ -9,4 +9,6 @@ urlpatterns = [
     path('hourlyprediction/', HourlyPredictionListView.as_view()),
     path('updatetrainstation/', updateTrainStation.as_view()),
     path('tweet/', SaveTweet.as_view()),
+
+    path('check/', Check().as_view())
 ]

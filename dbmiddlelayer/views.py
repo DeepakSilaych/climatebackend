@@ -14,6 +14,12 @@ from django.db.utils import OperationalError
 from django.utils import timezone
 from datetime import timedelta
 
+from django.db.models import Sum
+from django.db.models.functions import TruncHour
+from django.utils.timezone import now
+from django.utils.timezone import make_aware
+from datetime import datetime
+
 
 class AWSStationListView(APIView):
     def get(self, request):
@@ -115,3 +121,31 @@ def health_check(request):
     except OperationalError as e:   
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
+
+class Check(APIView):
+    def get(self, request):
+        stations = AWSStation.objects.all()
+        for station in stations:
+            print(station.name)
+            data = (
+                AWSDataForquater
+                .objects
+                .filter(
+                    station=station, 
+                    timestamp__gte=(timezone.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0), 
+                    timestamp__lt=(timezone.now() - timedelta(days=1)).replace(hour=23, minute=59, second=59)
+                )
+                .annotate(hour=TruncHour('timestamp'))
+                .values('hour')
+                .annotate(total_rainfall=Sum('rainfall'))
+                .order_by('hour')
+            )
+
+            for d in data:
+                StationData.objects.create(
+                    station=station,
+                    rainfall=d['total_rainfall'],
+                    timestamp=datetime.combine((timezone.now() - timedelta(days=1)).date(), d['hour'].time())
+                )
+                print(station.name, (timezone.now() - timedelta(days=1)).date(), d['hour'].time(), d['total_rainfall'])
+        return JsonResponse({'status': 'success'})
