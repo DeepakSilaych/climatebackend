@@ -50,8 +50,12 @@ class AWSDataForquaterListView(APIView):
 
 class DaywisePredictionListView(APIView):
     def post(self, request):
+        station = AWSStation.objects.get(station_id=request.data['station'])
+        station.rainfall = request.data['day1']
+        station.save()
+
         DaywisePrediction.objects.create(
-            station=AWSStation.objects.get(station_id=request.data['station']),
+            station=station,
             day1_rainfall=request.data['day1'],
             day2_rainfall=request.data['day2'],
             day3_rainfall=request.data['day3']

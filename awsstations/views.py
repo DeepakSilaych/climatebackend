@@ -39,8 +39,6 @@ class StationDetailView(APIView):
         pred_hrly_data = HourlyPrediction.objects.filter(station=station).latest('timestamp')
         hrly_data = StationData.objects.filter(station=station, timestamp__gte=now_time-timedelta(hours=24)).annotate(hour=TruncHour('timestamp')).values('hour').annotate(total_rainfall=Sum('rainfall')).order_by('hour')
 
-        print(hrly_data)
-    
 
         update_hrly_data = [
             {
@@ -56,7 +54,6 @@ class StationDetailView(APIView):
         #     for i in range(24)
         ]
 
-        # print(update_hrly_data)
 
         # Fetch daily data for the last 4 days
         three_days_ago = now_time.date() - timedelta(days=3)
@@ -71,7 +68,6 @@ class StationDetailView(APIView):
 
         pred_daily_data = DaywisePrediction.objects.filter(station=station, timestamp__isnull=False).latest('timestamp')
 
-        print(daily_data, "----------------------------------------------------------------------")
 
 
         try :
@@ -112,7 +108,7 @@ class StationDetailView(APIView):
         # Fetch seasonal data
         stationdata = (
             StationData.objects
-            .filter(station=station, timestamp__gte='2021-06-10')
+            .filter(station=station, timestamp__gte='2021-06-10', timestamp__lt=(now_time - timedelta(days=1)))
             .annotate(date=TruncDate('timestamp'))
             .values('date')
             .annotate(total_rainfall=Sum('rainfall'))
@@ -128,7 +124,7 @@ class StationDetailView(APIView):
                 'date': data['date'],
                 'observed': data['total_rainfall'],
                 'predicted': predicted_value
-            })
+            }) 
 
         return Response({
             'station': serializer,
