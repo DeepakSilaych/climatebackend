@@ -46,12 +46,6 @@ class StationDetailView(APIView):
                 'total_rainfall': data['total_rainfall']
             }
             for data in hrly_data
-        # ] + [
-        #     {
-        #         'hour': (now_time + timedelta(hours=i)).strftime('%H:00'),
-        #         'total_rainfall': float(pred_hrly_data.hr_24_rainfall[i])
-        #     }   
-        #     for i in range(24)
         ]
 
 
@@ -123,7 +117,7 @@ class StationDetailView(APIView):
             seasonaldata.append({
                 'date': data['date'],
                 'observed': data['total_rainfall'],
-                'predicted': predicted_value
+                'predicted': predicted_value        
             }) 
 
         return Response({

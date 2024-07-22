@@ -47,11 +47,19 @@ class StationDataListView(APIView):
 
 class AWSDataForquaterListView(APIView):
     def post(self, request):
-        print(request.data)
+        station = AWSStation.objects.get(station_id=request.data['station'])
         AWSDataForquater.objects.create(
-            station=AWSStation.objects.get(station_id=request.data['station']),
+            station=station,
             rainfall=request.data['rainfall']
         )
+        
+        try:
+            trainstations = TrainStation.objects.filter(neareststation=station)
+            for trainstation in trainstations:
+                updatetrain(trainstation)
+        except:
+            pass
+
         return Response({'status': 'success'})
 
 class DaywisePredictionListView(APIView):
@@ -110,6 +118,26 @@ class updateTrainStation(APIView):
             station.save()
 
         return Response({'status': 'success'})
+
+def updatetrain(station):
+    AWSDataForquater.objects.filter(station=station.neareststation, timestamp__gte=timezone.now() - timedelta(days=2)).delete()
+    stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
+    if len(stationdata) == 4:
+        rainfall = 0
+        for data in stationdata:
+            rainfall += data.rainfall
+        if rainfall > 10:
+            station.WarningLevel = 3
+        elif rainfall > 5:
+            station.WarningLevel = 2
+        elif rainfall > 2.5:
+            station.WarningLevel = 1
+        else:
+            station.WarningLevel = 0
+    station.save()
+
+    return Response({'status': 'success'})
+
     
 
 def health_check(request):
