@@ -54,6 +54,13 @@ class StationDetailView(APIView):
         ]
 
 
+
+
+
+
+
+
+
         # Fetch daily data for the last 4 days
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data = (
@@ -90,6 +97,16 @@ class StationDetailView(APIView):
             update_daily_data = []
 
 
+
+
+
+
+
+
+
+
+
+
         mobile_daily_data = {}
         try:             
             for data in daily_data[:3] if pred_daily_data.timestamp.date() != now_time.date() else daily_data[1:]:
@@ -114,10 +131,24 @@ class StationDetailView(APIView):
             .order_by('date')
         )
 
+
+        for data in stationdata:
+            # previous_day = data['date'].strftime('%Y-%m-%d')  - timedelta(days=1)
+            data = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
+            print("-------------------------------------------")
+            if data:
+                print(data.timestamp)
+                print(data.day1_rainfall)
+                print(data.day2_rainfall)
+                print(data.day3_rainfall)
+            else: 
+                print("No data")
+            print("timestamp: ", previous_day)
+
+
         seasonaldata = []
         for data in stationdata:
-
-            previous_day = data['date'] - timedelta(days=1)
+            previous_day = data['date'].strftime('%Y-%m-%d')  - timedelta(days=1)
             predicted_rainfall = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
             predicted_value = predicted_rainfall.day1_rainfall if predicted_rainfall else 0
             seasonaldata.append({

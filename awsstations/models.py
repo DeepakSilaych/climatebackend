@@ -23,7 +23,7 @@ class StationData(models.Model):
 
 class DaywisePrediction(models.Model):
     station = models.ForeignKey(AWSStation, on_delete=models.CASCADE, blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True, null=True)
+    timestamp = models.DateTimeField(default=timezone.now, null=True)
     day1_rainfall = models.FloatField(default=0)
     day2_rainfall = models.FloatField(default=0)
     day3_rainfall = models.FloatField(default=0)
