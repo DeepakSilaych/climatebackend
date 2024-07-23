@@ -124,7 +124,7 @@ class StationDetailView(APIView):
         # Fetch seasonal data
         stationdata = (
             StationData.objects
-            .filter(station=station, timestamp__gte='2021-06-10', timestamp__lt=(now_time - timedelta(days=1)))
+            .filter(station=station, timestamp__gte='2021-06-10', timestamp__lte=(now_time - timedelta(days=1)))
             .annotate(date=TruncDate('timestamp'))
             .values('date')
             .annotate(total_rainfall=Sum('rainfall'))
@@ -133,7 +133,7 @@ class StationDetailView(APIView):
 
         seasonaldata = []
         for data in stationdata:
-            previous_day = data['date']
+            previous_day = data['date'] - timedelta(days=1)
             predicted_rainfall = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
             predicted_value = predicted_rainfall.day1_rainfall if predicted_rainfall else 0
             seasonaldata.append({
