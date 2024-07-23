@@ -68,12 +68,22 @@ class DaywisePredictionListView(APIView):
         station.rainfall = request.data['day1']
         station.save()
 
-        DaywisePrediction.objects.create(
-            station=station,
-            day1_rainfall=request.data['day1'],
-            day2_rainfall=request.data['day2'],
-            day3_rainfall=request.data['day3']
-        )
+        if request.data['date']:
+            DaywisePrediction.objects.create(
+                station=station,
+                timestamp=make_aware(datetime.strptime(request.data['date'], '%Y-%m-%d')),
+                day1_rainfall=request.data['day1'],
+                day2_rainfall=request.data['day2'],
+                day3_rainfall=request.data['day3']
+            )
+
+        else :
+            DaywisePrediction.objects.create(
+                station=station,
+                day1_rainfall=request.data['day1'],
+                day2_rainfall=request.data['day2'],
+                day3_rainfall=request.data['day3']
+            )
         return Response({'status': 'success'})
 
 class HourlyPredictionListView(APIView):
