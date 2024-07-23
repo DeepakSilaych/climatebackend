@@ -131,24 +131,9 @@ class StationDetailView(APIView):
             .order_by('date')
         )
 
-
-        for data in stationdata:
-            # previous_day = data['date'].strftime('%Y-%m-%d')  - timedelta(days=1)
-            data = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
-            print("-------------------------------------------")
-            if data:
-                print(data.timestamp)
-                print(data.day1_rainfall)
-                print(data.day2_rainfall)
-                print(data.day3_rainfall)
-            else: 
-                print("No data")
-            print("timestamp: ", previous_day)
-
-
         seasonaldata = []
         for data in stationdata:
-            previous_day = data['date'].strftime('%Y-%m-%d')  - timedelta(days=1)
+            previous_day = data['date'] - timedelta(days=1)
             predicted_rainfall = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
             predicted_value = predicted_rainfall.day1_rainfall if predicted_rainfall else 0
             seasonaldata.append({
