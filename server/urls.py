@@ -13,7 +13,7 @@ urlpatterns = [
 
     path('blogs/', include('blogs.urls')),
     path('cs/', include('crowdsource.urls')),
-    path('aws/', include('awsstations.urls')),
+    path('aw/', include('awsstations.urls')),
     path('weather/', include('weatherstations.urls')),  
     path('db/', include('dbmiddlelayer.urls')),
 
