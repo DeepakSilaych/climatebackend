@@ -71,7 +71,7 @@ class DaywisePredictionListView(APIView):
         if request.data['date']:
             DaywisePrediction.objects.create(
                 station=station,
-                timestamp=make_aware(datetime.strptime(request.data['date'], '%Y-%m-%d')),
+                timestamp= datetime.strptime(request.data['date'], '%Y-%m-%d %H:%M:%S'),
                 day1_rainfall=request.data['day1'],
                 day2_rainfall=request.data['day2'],
                 day3_rainfall=request.data['day3']
