@@ -68,7 +68,7 @@ class DaywisePredictionListView(APIView):
         station.rainfall = request.data['day1']
         station.save()
 
-        if request.data['date']:
+        try :
             DaywisePrediction.objects.create(
                 station=station,
                 timestamp= datetime.strptime(request.data['date'], '%Y-%m-%d %H:%M:%S'),
@@ -77,7 +77,7 @@ class DaywisePredictionListView(APIView):
                 day3_rainfall=request.data['day3']
             )
 
-        else :
+        except :
             DaywisePrediction.objects.create(
                 station=station,
                 day1_rainfall=request.data['day1'],

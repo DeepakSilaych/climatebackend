@@ -96,17 +96,6 @@ class StationDetailView(APIView):
             print(e)
             update_daily_data = []
 
-
-
-
-
-
-
-
-
-
-
-
         mobile_daily_data = {}
         try:             
             for data in daily_data[:3] if pred_daily_data.timestamp.date() != now_time.date() else daily_data[1:]:
