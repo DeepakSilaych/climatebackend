@@ -76,7 +76,6 @@ class DaywisePredictionListView(APIView):
                 day2_rainfall=request.data['day2'],
                 day3_rainfall=request.data['day3']
             )
-
         except :
             DaywisePrediction.objects.create(
                 station=station,
@@ -117,11 +116,11 @@ class updateTrainStation(APIView):
                 rainfall = 0
                 for data in stationdata:
                     rainfall += data.rainfall
-                if rainfall > 10:
+                if rainfall > 20:
                     station.WarningLevel = 3
-                elif rainfall > 5:
+                elif rainfall > 15:
                     station.WarningLevel = 2
-                elif rainfall > 2.5:
+                elif rainfall > 10:
                     station.WarningLevel = 1
                 else:
                     station.WarningLevel = 0
