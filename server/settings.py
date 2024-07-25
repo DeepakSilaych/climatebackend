@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'dbmiddlelayer',
     
     'rest_framework',
-    'django_celery_beat',
 ]
 
 MIDDLEWARE = [

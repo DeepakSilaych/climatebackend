@@ -109,45 +109,29 @@ class SaveTweet(APIView):
         
 class updateTrainStation(APIView):
     def get(self, request):
-        for station in TrainStation.objects.all():
-            AWSDataForquater.objects.filter(station=station.neareststation, timestamp__gte=timezone.now() - timedelta(days=2)).delete()
-            stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
-            if len(stationdata) == 4:
-                rainfall = 0
-                for data in stationdata:
-                    rainfall += data.rainfall
-                if rainfall > 20:
-                    station.WarningLevel = 3
-                elif rainfall > 15:
-                    station.WarningLevel = 2
-                elif rainfall > 10:
-                    station.WarningLevel = 1
-                else:
-                    station.WarningLevel = 0
-            station.save()
+        for AWSstation in AWSDataForquater.objects.all():
+            trainstations = TrainStation.objects.filter(neareststation=AWSstation.station)
+            for trainstation in trainstations:
+                print(trainstation.station_name)    
+
+            # rainfall = max([d.rainfall for d in stationdata])
+
+            # if rainfall > 20:
+            #     station.WarningLevel = 3
+            #     print(station.station_name, rainfall)
+            # elif rainfall > 15:
+            #     station.WarningLevel = 2
+            #     print(station.station_name, rainfall)
+            # elif rainfall > 10:
+            #     station.WarningLevel = 1
+            #     print(station.station_name, rainfall)
+
+            # else:
+            #     station.WarningLevel = 0
+            # station.save()
 
         return Response({'status': 'success'})
 
-def updatetrain(station):
-    AWSDataForquater.objects.filter(station=station.neareststation, timestamp__gte=timezone.now() - timedelta(days=2)).delete()
-    stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
-    if len(stationdata) == 4:
-        rainfall = 0
-        for data in stationdata:
-            rainfall += data.rainfall
-        if rainfall > 10:
-            station.WarningLevel = 3
-        elif rainfall > 5:
-            station.WarningLevel = 2
-        elif rainfall > 2.5:
-            station.WarningLevel = 1
-        else:
-            station.WarningLevel = 0
-    station.save()
-
-    return Response({'status': 'success'})
-
-    
 
 def health_check(request):
     try:
