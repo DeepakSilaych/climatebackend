@@ -53,14 +53,6 @@ class StationDetailView(APIView):
             for data in hrly_data
         ]
 
-
-
-
-
-
-
-
-
         # Fetch daily data for the last 4 days
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data = (

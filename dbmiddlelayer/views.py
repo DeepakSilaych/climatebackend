@@ -34,6 +34,7 @@ class StationDataListView(APIView):
             station=AWSStation.objects.get(station_id=request.data['station']), 
             rainfall=request.data['rainfall']
         )
+        updatetrain()
         return Response({'status': 'success'})
     
     def get(self, request):
@@ -107,30 +108,21 @@ class SaveTweet(APIView):
         return Response({'status': 'success'})
 
         
-class updateTrainStation(APIView):
-    def get(self, request):
-        for AWSstation in AWSDataForquater.objects.all():
-            trainstations = TrainStation.objects.filter(neareststation=AWSstation.station)
-            for trainstation in trainstations:
-                print(trainstation.station_name)    
+def updatetrain():
+    for station in TrainStation.objects.all():
+        stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
+        
+        rainfall = max([d.rainfall for d in stationdata])
+        if rainfall > 20:
+            station.WarningLevel = 3
+        elif rainfall > 15:
+            station.WarningLevel = 2
+        elif rainfall > 10:
+            station.WarningLevel = 1
+        else:
+            station.WarningLevel = 0
+        station.save()
 
-            # rainfall = max([d.rainfall for d in stationdata])
-
-            # if rainfall > 20:
-            #     station.WarningLevel = 3
-            #     print(station.station_name, rainfall)
-            # elif rainfall > 15:
-            #     station.WarningLevel = 2
-            #     print(station.station_name, rainfall)
-            # elif rainfall > 10:
-            #     station.WarningLevel = 1
-            #     print(station.station_name, rainfall)
-
-            # else:
-            #     station.WarningLevel = 0
-            # station.save()
-
-        return Response({'status': 'success'})
 
 
 def health_check(request):

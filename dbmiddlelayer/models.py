@@ -11,6 +11,6 @@ class AWSDataForquater(models.Model):
         return str(self.station) + ' - ' + str(self.rainfall) + 'mm'
     
     class Meta:
-        verbose_name = 'Quater AWS Data'
-        verbose_name_plural = 'Quater AWS Data'
+        verbose_name = 'AWS Data'
+        verbose_name_plural = 'AWS Data'
         ordering = ['-timestamp']
