@@ -4,7 +4,7 @@ from awsstations.serializers import *
 from crowdsource.models import *
 from crowdsource.serializers import *
 from .models import *
-
+from .utils import updatetrain
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -34,7 +34,6 @@ class StationDataListView(APIView):
             station=AWSStation.objects.get(station_id=request.data['station']), 
             rainfall=request.data['rainfall']
         )
-        updatetrain()
         return Response({'status': 'success'})
     
     def get(self, request):
@@ -49,20 +48,19 @@ class StationDataListView(APIView):
 class AWSDataForquaterListView(APIView):
     def post(self, request):
         station = AWSStation.objects.get(station_id=request.data['station'])
+
         AWSDataForquater.objects.create(
             station=station,
             rainfall=request.data['rainfall']
         )
-        
-        try:
-            trainstations = TrainStation.objects.filter(neareststation=station)
-            for trainstation in trainstations:
-                updatetrain(trainstation)
-        except:
-            pass
 
         return Response({'status': 'success'})
 
+class updateTrainStation(APIView):
+    def get(self, request):
+        updatetrain()
+        return Response({'status': 'success'})
+    
 class DaywisePredictionListView(APIView):
     def post(self, request):
         station = AWSStation.objects.get(station_id=request.data['station'])
@@ -106,22 +104,6 @@ class SaveTweet(APIView):
             address=request.data['location']
         )
         return Response({'status': 'success'})
-
-        
-def updatetrain():
-    for station in TrainStation.objects.all():
-        stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
-        
-        rainfall = max([d.rainfall for d in stationdata])
-        if rainfall > 20:
-            station.WarningLevel = 3
-        elif rainfall > 15:
-            station.WarningLevel = 2
-        elif rainfall > 10:
-            station.WarningLevel = 1
-        else:
-            station.WarningLevel = 0
-        station.save()
 
 
 

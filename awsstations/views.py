@@ -57,7 +57,7 @@ class StationDetailView(APIView):
         three_days_ago = now_time.date() - timedelta(days=3)
         daily_data = (
             StationData.objects
-            .filter(station=station, timestamp__gte=three_days_ago)
+            .filter(station=station, timestamp__gte=three_days_ago, timestamp__lte=(now_time))
             .annotate(date=TruncDate('timestamp'))
             .values('date')
             .annotate(total_rainfall=Sum('rainfall'))
@@ -65,8 +65,6 @@ class StationDetailView(APIView):
         )
 
         pred_daily_data = DaywisePrediction.objects.filter(station=station, timestamp__isnull=False).latest('timestamp')
-
-
 
         try :
             update_daily_data = [
@@ -103,25 +101,19 @@ class StationDetailView(APIView):
 
 
         # Fetch seasonal data
-        stationdata = (
-            StationData.objects
-            .filter(station=station, timestamp__gte='2021-06-10', timestamp__lte=(now_time - timedelta(days=1)))
-            .annotate(date=TruncDate('timestamp'))
-            .values('date')
-            .annotate(total_rainfall=Sum('rainfall'))
-            .order_by('date')
-        )
 
-        seasonaldata = []
-        for data in stationdata:
-            previous_day = data['date'] - timedelta(days=1)
-            predicted_rainfall = DaywisePrediction.objects.filter(station=station, timestamp__date=previous_day).first()
-            predicted_value = predicted_rainfall.day1_rainfall if predicted_rainfall else 0
-            seasonaldata.append({
-                'date': data['date'],
-                'observed': data['total_rainfall'],
-                'predicted': predicted_value        
-            }) 
+        stationdatas = StationData.objects.filter(station=station).annotate(day=TruncDate('timestamp')).values('day').annotate(total_rainfall=Sum('rainfall')).order_by('day')
+        stationdatas = stationdatas[: len(stationdatas) - 1]
+        # print(stationdatas.total_rainfall)
+
+        seasonaldata = [
+            {
+                'date': data['day'].strftime('%Y-%m-%d'),
+                'observed' : data['total_rainfall'],
+                'predicted' : (DaywisePrediction.objects.filter(station=station, timestamp__date=(data['day'] - timedelta(days=1))).first().day1_rainfall , 0)[DaywisePrediction.objects.filter(station=station, timestamp__date=(data['day'] - timedelta(days=1))).first() == None]
+            }
+            for data in stationdatas
+        ]
 
         return Response({
             'station': serializer,

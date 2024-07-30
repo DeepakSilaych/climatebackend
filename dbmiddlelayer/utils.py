@@ -1,21 +1,19 @@
-import requests
-import json
+from awsstations.models import TrainStation
+from .models import AWSDataForquater
 
-url = "http://your-api-url/api/daywise-prediction/"
-
-data = {
-    "station": 24,
-    "date": "2024-07-04 00:00:00",  
-    "day1": 5.2,
-    "day2": 3.8,
-    "day3": 4.1
-}
-
-data_json = json.dumps(data)
-
-headers = {'Content-Type': 'application/json'}
-
-response = requests.post(url, data=data_json, headers=headers)
-
-print("Status Code:", response.status_code)
-print("Response:", response.json())
+def updatetrain():
+    for station in TrainStation.objects.all():
+        stationdata = AWSDataForquater.objects.filter(station=station.neareststation).order_by('-timestamp')[:4]
+        
+        rainfall = max([d.rainfall for d in stationdata])
+        if station.neareststation.station_id == 22:
+            print(f'-------------------{rainfall}')
+        if rainfall > 20:
+            station.WarningLevel = 3
+        elif rainfall > 15:
+            station.WarningLevel = 2
+        elif rainfall > 10:
+            station.WarningLevel = 1
+        else:
+            station.WarningLevel = 0
+        station.save()
