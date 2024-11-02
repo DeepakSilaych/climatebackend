@@ -110,7 +110,7 @@ class StationDetailView(APIView):
             {
                 'date': data['day'].strftime('%Y-%m-%d'),
                 'observed' : data['total_rainfall'],
-                'predicted' : (DaywisePrediction.objects.filter(station=station, timestamp__date=(data['day'] - timedelta(days=1))).first().day1_rainfall , 0)[DaywisePrediction.objects.filter(station=station, timestamp__date=(data['day'] - timedelta(days=1))).first() == None]
+                'predicted' : DaywisePrediction.objects.filter(station=station, timestamp__date=(data['day'] - timedelta(days=1))).first().day1_rainfall if DaywisePrediction.objects.filter(station=station, timestamp__date=(data['day'] - timedelta(days=1))).first() else 0
             }
             for data in stationdatas
         ]
